@@ -1,0 +1,70 @@
+version: 2
+
+jobs:
+  assemble:
+    working_directory: ~/juul-app-android
+    docker:
+      - image: circleci/android:api-26-alpha
+    steps:
+      - checkout
+      - restore_cache:
+          key: gradle-{{ checksum "settings.gradle" }}-{{ checksum "build.gradle" }}-{{ checksum "core/build.gradle" }}-{{ checksum "processor/build.gradle" }}-{{ checksum "retry/build.gradle" }}-{{ checksum "throw/build.gradle" }}
+      - run:
+          name: Android Assemble, Check
+          command: >
+                     ./gradlew
+                     -PdisablePreDex
+                     -Pkotlin.incremental=false
+                     -Pkotlinter.ignoreFailures=true
+                     --max-workers 2
+                     --no-daemon
+                     --stacktrace
+                     assemble check
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: gradle-{{ checksum "settings.gradle" }}-{{ checksum "build.gradle" }}-{{ checksum "core/build.gradle" }}-{{ checksum "processor/build.gradle" }}-{{ checksum "retry/build.gradle" }}-{{ checksum "throw/build.gradle" }}
+
+      # Save test results for all modules.
+      #
+      # Based on the following guide (modified to collect results into subdirectories named per the
+      # corresponding module name):
+      # https://circleci.com/docs/2.0/collect-test-data/#gradle-junit-test-results
+      - run:
+          name: Save Test Results
+          command: |
+            for i in $(find . -type f -regex ".*/build/test-results/.*xml");
+            do
+                module=$(echo "$i" | sed -E 's/\.\/(.*)\/build\/test-results\/.*xml/\1/')
+                destination="./junit/$module"
+                mkdir -p "$destination"
+                cp "$i" "$destination"
+            done
+          when: always
+      - store_test_results:
+          path: junit
+
+      # Save test reports for all modules to single directory. This will recursively copy the test
+      # results directories that contain the `index.html` (and supporting assets, such as CSS files)
+      # to a subdirectory of `./reports/` (named according to the module name, e.g. `./reports/app/`
+      # for `app` module).
+      - run:
+          name: Save Test Reports
+          command: |
+            for i in $(find . -type d | grep -E -o '.*\/build\/reports\/tests\/[^/.]*$');
+            do
+                module=$(echo "$i" | sed -E 's/\.\/([^/.]*)\/build\/reports\/tests\/[^/.]*/\1/')
+                destination="./reports/$module/"
+                mkdir -p "$destination"
+                cp -Rv "$i" "$destination"
+            done
+      - store_artifacts:
+          path: reports
+          destination: reports
+
+workflows:
+  version: 2
+
+  default:
+    jobs:
+      - assemble
