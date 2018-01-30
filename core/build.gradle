@@ -1,0 +1,42 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'com.github.dcendents.android-maven'
+
+group 'com.github.JuulLabs'
+
+kotlin.experimental.coroutines 'enable'
+
+android {
+    compileSdkVersion versions.compileSdk
+
+    defaultConfig {
+        minSdkVersion versions.minSdk
+        versionName versions.able
+    }
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+dependencies {
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.coroutines}"
+
+    implementation "com.jakewharton.timber:timber:${versions.timber}"
+
+    // [TimberKt](https://github.com/ajalt/timberkt)
+    implementation "com.github.ajalt:timberkt:${versions.timberKt}"
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:${versions.kotlinTestJunit}"
+
+    // [Mockito-Kotlin](https://github.com/nhaarman/mockito-kotlin)
+    testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:${versions.mockitoKotlin}"
+
+    // [EqualsVerifier](https://github.com/jqno/equalsverifier)
+    testImplementation "nl.jqno.equalsverifier:equalsverifier:${versions.equalsVerifier}"
+}

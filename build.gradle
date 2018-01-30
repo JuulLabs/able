@@ -1,0 +1,61 @@
+buildscript {
+    ext.versions = [
+        'minSdk': 21,
+        'compileSdk': 26,
+        'targetSdk': 26,
+
+        'able': '0.2.0',
+
+        'kotlin': '1.2.51',
+        'coroutines': '0.24.0',
+        'timber': '4.6.1',
+        'timberKt': '1.4.0',
+        'appCompat': '26.1.0',
+
+        'kotlinTestJunit': '1.2.51',
+        'mockitoKotlin': '2.0.0-RC1',
+        'equalsVerifier': '2.5.2'
+    ]
+
+    repositories {
+        google()
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.1.4'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
+
+        /* [Gradle Android Maven plugin](https://github.com/dcendents/android-maven-gradle-plugin)
+         * Provides support for installing to local maven (`~/.m2/repository`).
+         */
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+
+        // JitPack repository for:
+        // - [TimberKt](https://github.com/ajalt/timberkt)
+        maven { url "https://jitpack.io" }
+    }
+}
+
+subprojects {
+    tasks.withType(Test) {
+        testLogging {
+            events "passed", "skipped", "failed"
+            exceptionFormat "full"
+            showExceptions true
+            showStackTraces true
+            showCauses true
+        }
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
