@@ -11,7 +11,7 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
-import com.github.ajalt.timberkt.Timber
+import com.juul.able.experimental.Able
 import com.juul.able.experimental.GattState
 import com.juul.able.experimental.GattStatus
 import com.juul.able.experimental.asGattConnectionStatusString
@@ -70,7 +70,7 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
     }
 
     fun close() {
-        Timber.v { "close → Begin" }
+        Able.verbose { "close → Begin" }
 
         onConnectionStateChange.close()
         onCharacteristicChanged.close()
@@ -82,7 +82,7 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         onDescriptorWrite.close()
         onReliableWriteCompleted.close()
 
-        Timber.v { "close → End" }
+        Able.verbose { "close → End" }
     }
 
     override fun onConnectionStateChange(
@@ -90,14 +90,14 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         status: GattStatus,
         newState: GattState
     ) {
-        Timber.d {
+        Able.debug {
             val statusString = status.asGattConnectionStatusString()
             val stateString = newState.asGattStateString()
             "onConnectionStateChange → status = $statusString, newState = $stateString"
         }
 
         if (!onConnectionStateChange.offer(OnConnectionStateChange(status, newState))) {
-            Timber.w { "onConnectionStateChange → dropped" }
+            Able.warn { "onConnectionStateChange → dropped" }
         }
 
         when (newState) {
@@ -107,9 +107,9 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
     }
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: GattStatus) {
-        Timber.v { "onServicesDiscovered → status = $status" }
+        Able.verbose { "onServicesDiscovered → status = $status" }
         if (!onServicesDiscovered.offer(OnServicesDiscovered(status))) {
-            Timber.w { "onServicesDiscovered → dropped" }
+            Able.warn { "onServicesDiscovered → dropped" }
         }
         notifyGattReady()
     }
@@ -119,10 +119,10 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         characteristic: BluetoothGattCharacteristic,
         status: GattStatus
     ) {
-        Timber.v { "onCharacteristicRead → uuid = ${characteristic.uuid}" }
+        Able.verbose { "onCharacteristicRead → uuid = ${characteristic.uuid}" }
         val event = OnCharacteristicRead(characteristic, characteristic.value, status)
         if (!onCharacteristicRead.offer(event)) {
-            Timber.w { "onCharacteristicRead → dropped" }
+            Able.warn { "onCharacteristicRead → dropped" }
         }
         notifyGattReady()
     }
@@ -132,9 +132,9 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         characteristic: BluetoothGattCharacteristic,
         status: GattStatus
     ) {
-        Timber.v { "onCharacteristicWrite → uuid = ${characteristic.uuid}" }
+        Able.verbose { "onCharacteristicWrite → uuid = ${characteristic.uuid}" }
         if (!onCharacteristicWrite.offer(OnCharacteristicWrite(characteristic, status))) {
-            Timber.w { "onCharacteristicWrite → dropped" }
+            Able.warn { "onCharacteristicWrite → dropped" }
         }
         notifyGattReady()
     }
@@ -143,10 +143,10 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic
     ) {
-        Timber.v { "onCharacteristicChanged → uuid = ${characteristic.uuid}" }
+        Able.verbose { "onCharacteristicChanged → uuid = ${characteristic.uuid}" }
         val event = OnCharacteristicChanged(characteristic, characteristic.value)
         if (!onCharacteristicChanged.offer(event)) {
-            Timber.w { "OnCharacteristicChanged → dropped" }
+            Able.warn { "OnCharacteristicChanged → dropped" }
         }
 
         // We don't call `notifyGattReady` because `onCharacteristicChanged` is called whenever a
@@ -159,9 +159,9 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         descriptor: BluetoothGattDescriptor,
         status: GattStatus
     ) {
-        Timber.v { "onDescriptorRead → uuid = ${descriptor.uuid}" }
+        Able.verbose { "onDescriptorRead → uuid = ${descriptor.uuid}" }
         if (!onDescriptorRead.offer(OnDescriptorRead(descriptor, descriptor.value, status))) {
-            Timber.w { "onDescriptorRead → dropped" }
+            Able.warn { "onDescriptorRead → dropped" }
         }
         notifyGattReady()
     }
@@ -171,25 +171,25 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         descriptor: BluetoothGattDescriptor,
         status: GattStatus
     ) {
-        Timber.v { "onDescriptorWrite → uuid = ${descriptor.uuid}" }
+        Able.verbose { "onDescriptorWrite → uuid = ${descriptor.uuid}" }
         if (!onDescriptorWrite.offer(OnDescriptorWrite(descriptor, status))) {
-            Timber.w { "onDescriptorWrite → dropped" }
+            Able.warn { "onDescriptorWrite → dropped" }
         }
         notifyGattReady()
     }
 
     override fun onReliableWriteCompleted(gatt: BluetoothGatt, status: Int) {
-        Timber.v { "onReliableWriteCompleted → status = $status" }
+        Able.verbose { "onReliableWriteCompleted → status = $status" }
         if (!onReliableWriteCompleted.offer(OnReliableWriteCompleted(status))) {
-            Timber.w { "onReliableWriteCompleted → dropped" }
+            Able.warn { "onReliableWriteCompleted → dropped" }
         }
         notifyGattReady()
     }
 
     override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
-        Timber.v { "onMtuChanged → status = $status" }
+        Able.verbose { "onMtuChanged → status = $status" }
         if (!onMtuChanged.offer(OnMtuChanged(mtu, status))) {
-            Timber.w { "onMtuChanged → dropped" }
+            Able.warn { "onMtuChanged → dropped" }
         }
         notifyGattReady()
     }

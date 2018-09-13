@@ -5,7 +5,7 @@
 package com.juul.able.experimental.messenger
 
 import android.bluetooth.BluetoothGatt
-import com.github.ajalt.timberkt.Timber
+import com.juul.able.experimental.Able
 import com.juul.able.experimental.messenger.Message.CharacteristicNotification
 import com.juul.able.experimental.messenger.Message.DiscoverServices
 import com.juul.able.experimental.messenger.Message.ReadCharacteristic
@@ -25,12 +25,12 @@ class Messenger internal constructor(
 
     private val context = newSingleThreadContext("Gatt")
     private val actor = actor<Message>(context) {
-        Timber.v { "Begin" }
+        Able.verbose { "Begin" }
         consumeEach { message ->
-            Timber.d { "Waiting for Gatt" }
+            Able.debug { "Waiting for Gatt" }
             callback.waitForGattReady()
 
-            Timber.d { "Processing ${message.javaClass.simpleName}" }
+            Able.debug { "Processing ${message.javaClass.simpleName}" }
             val result: Boolean = when (message) {
                 is DiscoverServices -> bluetoothGatt.discoverServices()
                 is ReadCharacteristic -> bluetoothGatt.readCharacteristic(message.characteristic)
@@ -54,18 +54,18 @@ class Messenger internal constructor(
                     bluetoothGatt.writeDescriptor(message.descriptor)
                 }
             }
-            Timber.d { "Processed ${message.javaClass.simpleName}, result=$result" }
+            Able.debug { "Processed ${message.javaClass.simpleName}, result=$result" }
             message.response.complete(result)
         }
-        Timber.v { "End" }
+        Able.verbose { "End" }
     }
 
     fun close() {
-        Timber.v { "close → Begin" }
+        Able.verbose { "close → Begin" }
         callback.close()
         actor.close()
         closeContext()
-        Timber.v { "close → End" }
+        Able.verbose { "close → End" }
     }
 
     /**

@@ -2,6 +2,8 @@
  * Copyright 2018 JUUL Labs, Inc.
  */
 
+package com.juul.able.experimental
+
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import com.juul.able.experimental.messenger.OnCharacteristicChanged

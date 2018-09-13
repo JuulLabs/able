@@ -21,8 +21,6 @@ buildscript {
 
         'kotlin': '1.2.51',
         'coroutines': '0.24.0',
-        'timber': '4.6.1',
-        'timberKt': '1.4.0',
 
         'kotlinTestJunit': '1.2.51',
         'mockitoKotlin': '2.0.0-RC1',
@@ -49,10 +47,6 @@ allprojects {
     repositories {
         google()
         jcenter()
-
-        // JitPack repository for:
-        // - [TimberKt](https://github.com/ajalt/timberkt)
-        maven { url "https://jitpack.io" }
     }
 }
 

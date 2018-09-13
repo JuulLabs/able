@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: gradle-{{ checksum "settings.gradle" }}-{{ checksum "build.gradle" }}-{{ checksum "core/build.gradle" }}-{{ checksum "processor/build.gradle" }}-{{ checksum "retry/build.gradle" }}-{{ checksum "throw/build.gradle" }}
+          key: gradle-{{ checksum "settings.gradle" }}-{{ checksum "build.gradle" }}-{{ checksum "core/build.gradle" }}-{{ checksum "processor/build.gradle" }}-{{ checksum "retry/build.gradle" }}-{{ checksum "throw/build.gradle" }}-{{ checksum "timber-logger/build.gradle" }}
       - run:
           name: Android Assemble, Check
           command: >
@@ -22,7 +22,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.gradle
-          key: gradle-{{ checksum "settings.gradle" }}-{{ checksum "build.gradle" }}-{{ checksum "core/build.gradle" }}-{{ checksum "processor/build.gradle" }}-{{ checksum "retry/build.gradle" }}-{{ checksum "throw/build.gradle" }}
+          key: gradle-{{ checksum "settings.gradle" }}-{{ checksum "build.gradle" }}-{{ checksum "core/build.gradle" }}-{{ checksum "processor/build.gradle" }}-{{ checksum "retry/build.gradle" }}-{{ checksum "throw/build.gradle" }}-{{ checksum "timber-logger/build.gradle" }}
 
       # Save test results for all modules.
       #

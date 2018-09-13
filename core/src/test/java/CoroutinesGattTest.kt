@@ -26,8 +26,7 @@ class CoroutinesGattTest {
         @BeforeClass
         @JvmStatic
         fun setUp() {
-            // Useful for debugging Gatt related unit tests:
-//            Timber.plant(UnitTestTree())
+            Able.logger = NoOpLogger()
         }
     }
 
