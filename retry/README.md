@@ -12,6 +12,8 @@ val gatt = device
 
 ## Gradle
 
+[![JitPack version](https://jitpack.io/v/JuulLabs/able.svg)](https://jitpack.io/#JuulLabs/able)
+
 ```groovy
 repositories {
     maven { url "https://jitpack.io" }
