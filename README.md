@@ -53,6 +53,8 @@ fun connect(context: Context, device: BluetoothDevice) = launch(UI) {
 
 ## Gradle
 
+[![JitPack version](https://jitpack.io/v/JuulLabs/able.svg)](https://jitpack.io/#JuulLabs/able)
+
 To use `able` in your Android project, setup your `build.gradle` as follows:
 
 ```groovy
