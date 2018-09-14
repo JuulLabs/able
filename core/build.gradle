@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'com.github.dcendents.android-maven'
 
-group 'com.github.JuulLabs'
+group 'com.github.JuulLabs.able'
 
 kotlin.experimental.coroutines 'enable'
 
