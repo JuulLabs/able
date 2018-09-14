@@ -1,16 +1,28 @@
 buildscript {
+    /**
+     * Generates version name based on git tag.
+     * https://ryanharter.com/blog/2013/07/30/automatic-versioning-with-git-and-gradle/
+     */
+    def getVersionName = { ->
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'describe', '--tags'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    }
+
     ext.versions = [
         'minSdk': 21,
         'compileSdk': 26,
         'targetSdk': 26,
 
-        'able': '0.2.0',
+        'able': getVersionName(),
 
         'kotlin': '1.2.51',
         'coroutines': '0.24.0',
         'timber': '4.6.1',
         'timberKt': '1.4.0',
-        'appCompat': '26.1.0',
 
         'kotlinTestJunit': '1.2.51',
         'mockitoKotlin': '2.0.0-RC1',
