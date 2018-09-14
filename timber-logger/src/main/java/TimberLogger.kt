@@ -25,7 +25,7 @@ class TimberLogger : Logger {
 
 // Tag length limit was removed in API 24.
 private fun String.asSafeTag(): String =
-    if (Build.VERSION.SDK_INT < 24 && length > MAX_TAG_LENGTH) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N && length > MAX_TAG_LENGTH) {
         substring(0, MAX_TAG_LENGTH)
     } else {
         this
