@@ -8,7 +8,6 @@ package com.juul.able.experimental
 
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothProfile
-import com.github.ajalt.timberkt.Timber
 import com.juul.able.experimental.messenger.OnConnectionStateChange
 import kotlinx.coroutines.experimental.channels.ReceiveChannel
 import kotlinx.coroutines.experimental.channels.consumeEach
@@ -22,13 +21,13 @@ class ConnectionStateMonitor(private val gatt: Gatt) : Closeable {
     private var connectionStateSubscription: ReceiveChannel<OnConnectionStateChange>? = null
 
     suspend fun suspendUntilConnectionState(state: GattState): Boolean {
-        Timber.d { "Suspending until ${state.asGattStateString()}" }
+        Able.debug { "Suspending until ${state.asGattStateString()}" }
 
         gatt.onConnectionStateChange.openSubscription().also { subscription ->
             if (state == BluetoothProfile.STATE_DISCONNECTED && subscription.isEmpty) {
                 // When disconnecting, the channel may be empty if we've never connected before, so
                 // we shouldn't wait.
-                Timber.i { "suspendUntilConnectionState → subscription.isEmpty, aborting" }
+                Able.info { "suspendUntilConnectionState → subscription.isEmpty, aborting" }
                 subscription.cancel()
                 return true
             } else {
@@ -39,26 +38,26 @@ class ConnectionStateMonitor(private val gatt: Gatt) : Closeable {
                 }
 
                 subscription.consumeEach { (status, newState) ->
-                    Timber.v {
+                    Able.verbose {
                         val statusString = status.asGattConnectionStatusString()
                         val stateString = newState.asGattStateString()
                         "status = $statusString, newState = $stateString"
                     }
 
                     if (status != BluetoothGatt.GATT_SUCCESS) {
-                        Timber.i { "Received ${status.asGattConnectionStatusString()}, giving up." }
+                        Able.info { "Received ${status.asGattConnectionStatusString()}, giving up." }
                         return false
                     }
 
                     if (state == newState) {
-                        Timber.i { "Reached ${state.asGattStateString()}" }
+                        Able.info { "Reached ${state.asGattStateString()}" }
                         return true
                     }
                 }
             }
         }
 
-        Timber.d { "suspendUntilConnectionState → Aborted." }
+        Able.debug { "suspendUntilConnectionState → Aborted." }
         return false
     }
 

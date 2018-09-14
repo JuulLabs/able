@@ -13,7 +13,6 @@ import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.os.RemoteException
-import com.github.ajalt.timberkt.Timber
 import com.juul.able.experimental.messenger.Message.CharacteristicNotification
 import com.juul.able.experimental.messenger.Message.DiscoverServices
 import com.juul.able.experimental.messenger.Message.ReadCharacteristic
@@ -52,7 +51,7 @@ class CoroutinesGatt(
         return if (requestConnect()) {
             connectionStateMonitor.suspendUntilConnectionState(STATE_CONNECTED)
         } else {
-            Timber.e { "connect → BluetoothGatt.requestConnect() returned false " }
+            Able.error { "connect → BluetoothGatt.requestConnect() returned false " }
             false
         }
     }
@@ -63,11 +62,11 @@ class CoroutinesGatt(
     }
 
     override fun close() {
-        Timber.v { "close → Begin" }
+        Able.verbose { "close → Begin" }
         connectionStateMonitor.close()
         messenger.close()
         bluetoothGatt.close()
-        Timber.v { "close → End" }
+        Able.verbose { "close → End" }
     }
 
     override val services: List<BluetoothGattService> get() = bluetoothGatt.services
@@ -77,20 +76,20 @@ class CoroutinesGatt(
      * @throws [RemoteException] if underlying [BluetoothGatt.discoverServices] returns `false`.
      */
     override suspend fun discoverServices(): OnServicesDiscovered {
-        Timber.d { "discoverServices → send(DiscoverServices)" }
+        Able.debug { "discoverServices → send(DiscoverServices)" }
 
         val response = CompletableDeferred<Boolean>()
         messenger.send(DiscoverServices(response))
 
         val call = "BluetoothGatt.discoverServices()"
-        Timber.v { "discoverServices → Waiting for $call" }
+        Able.verbose { "discoverServices → Waiting for $call" }
         if (!response.await()) {
             throw RemoteException("$call returned false.")
         }
 
-        Timber.v { "discoverServices → Waiting for BluetoothGattCallback" }
+        Able.verbose { "discoverServices → Waiting for BluetoothGattCallback" }
         return messenger.callback.onServicesDiscovered.receive().also { (status) ->
-            Timber.i { "discoverServices, status=${status.asGattStatusString()}" }
+            Able.info { "discoverServices, status=${status.asGattStatusString()}" }
         }
     }
 
@@ -101,20 +100,20 @@ class CoroutinesGatt(
         characteristic: BluetoothGattCharacteristic
     ): OnCharacteristicRead {
         val uuid = characteristic.uuid
-        Timber.d { "readCharacteristic → send(ReadCharacteristic[uuid=$uuid])" }
+        Able.debug { "readCharacteristic → send(ReadCharacteristic[uuid=$uuid])" }
 
         val response = CompletableDeferred<Boolean>()
         messenger.send(ReadCharacteristic(characteristic, response))
 
         val call = "BluetoothGatt.readCharacteristic(BluetoothGattCharacteristic[uuid=$uuid])"
-        Timber.v { "readCharacteristic → Waiting for $call" }
+        Able.verbose { "readCharacteristic → Waiting for $call" }
         if (!response.await()) {
             throw RemoteException("Failed to read characteristic with UUID $uuid.")
         }
 
-        Timber.v { "readCharacteristic → Waiting for BluetoothGattCallback" }
+        Able.verbose { "readCharacteristic → Waiting for BluetoothGattCallback" }
         return messenger.callback.onCharacteristicRead.receive().also { (_, value, status) ->
-            Timber.i {
+            Able.info {
                 val bytesString = value.size.bytesString
                 val statusString = status.asGattStatusString()
                 "← readCharacteristic $uuid ($bytesString), status=$statusString"
@@ -133,20 +132,20 @@ class CoroutinesGatt(
         writeType: WriteType
     ): OnCharacteristicWrite {
         val uuid = characteristic.uuid
-        Timber.d { "writeCharacteristic → send(WriteCharacteristic[uuid=$uuid])" }
+        Able.debug { "writeCharacteristic → send(WriteCharacteristic[uuid=$uuid])" }
 
         val response = CompletableDeferred<Boolean>()
         messenger.send(WriteCharacteristic(characteristic, value, writeType, response))
 
         val call = "BluetoothGatt.writeCharacteristic(BluetoothGattCharacteristic[uuid=$uuid])"
-        Timber.v { "writeCharacteristic → Waiting for $call" }
+        Able.verbose { "writeCharacteristic → Waiting for $call" }
         if (!response.await()) {
             throw RemoteException("$call returned false.")
         }
 
-        Timber.v { "writeCharacteristic → Waiting for BluetoothGattCallback" }
+        Able.verbose { "writeCharacteristic → Waiting for BluetoothGattCallback" }
         return messenger.callback.onCharacteristicWrite.receive().also { (_, status) ->
-            Timber.i {
+            Able.info {
                 val bytesString = value.size.bytesString
                 val typeString = writeType.asWriteTypeString()
                 val statusString = status.asGattStatusString()
@@ -163,20 +162,20 @@ class CoroutinesGatt(
         descriptor: BluetoothGattDescriptor, value: ByteArray
     ): OnDescriptorWrite {
         val uuid = descriptor.uuid
-        Timber.d { "writeDescriptor → send(WriteDescriptor[uuid=$uuid])" }
+        Able.debug { "writeDescriptor → send(WriteDescriptor[uuid=$uuid])" }
 
         val response = CompletableDeferred<Boolean>()
         messenger.send(WriteDescriptor(descriptor, value, response))
 
         val call = "BluetoothGatt.writeDescriptor(BluetoothGattDescriptor[uuid=$uuid])"
-        Timber.v { "writeDescriptor → Waiting for $call" }
+        Able.verbose { "writeDescriptor → Waiting for $call" }
         if (!response.await()) {
             throw RemoteException("$call returned false.")
         }
 
-        Timber.v { "writeDescriptor → Waiting for BluetoothGattCallback" }
+        Able.verbose { "writeDescriptor → Waiting for BluetoothGattCallback" }
         return messenger.callback.onDescriptorWrite.receive().also { (_, status) ->
-            Timber.i {
+            Able.info {
                 val bytesString = value.size.bytesString
                 val statusString = status.asGattStatusString()
                 "→ writeDescriptor $uuid ($bytesString), status=$statusString"
@@ -188,20 +187,20 @@ class CoroutinesGatt(
      * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
      */
     override suspend fun requestMtu(mtu: Int): OnMtuChanged {
-        Timber.d { "requestMtu → send(RequestMtu[mtu=$mtu])" }
+        Able.debug { "requestMtu → send(RequestMtu[mtu=$mtu])" }
 
         val response = CompletableDeferred<Boolean>()
         messenger.send(RequestMtu(mtu, response))
 
         val call = "BluetoothGatt.requestMtu($mtu)"
-        Timber.v { "requestMtu → Waiting for $call" }
+        Able.verbose { "requestMtu → Waiting for $call" }
         if (!response.await()) {
             throw RemoteException("$call returned false.")
         }
 
-        Timber.v { "requestMtu → Waiting for BluetoothGattCallback" }
+        Able.verbose { "requestMtu → Waiting for BluetoothGattCallback" }
         return messenger.callback.onMtuChanged.receive().also { (mtu, status) ->
-            Timber.i { "requestMtu $mtu, status=${status.asGattStatusString()}" }
+            Able.info { "requestMtu $mtu, status=${status.asGattStatusString()}" }
         }
     }
 
@@ -218,12 +217,12 @@ class CoroutinesGatt(
         val uuid = characteristic.uuid
         val call = "BluetoothGatt.setCharacteristicNotification(" +
             "BluetoothGattCharacteristic[uuid=$uuid], enabled=$enable)"
-        Timber.v { "requestMtu → Waiting for $call" }
+        Able.verbose { "requestMtu → Waiting for $call" }
         if (!response.await()) {
             throw RemoteException("$call returned false.")
         }
 
-        Timber.i { "setCharacteristicNotification $uuid enable=$enable" }
+        Able.info { "setCharacteristicNotification $uuid enable=$enable" }
         return true
     }
 }

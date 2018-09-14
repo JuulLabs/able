@@ -8,7 +8,6 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGatt.STATE_CONNECTED
 import android.content.Context
-import com.github.ajalt.timberkt.Timber
 import com.juul.able.experimental.ConnectGattResult.ConnectGattCanceled
 import com.juul.able.experimental.ConnectGattResult.ConnectGattFailure
 import com.juul.able.experimental.ConnectGattResult.ConnectGattSuccess
@@ -70,7 +69,7 @@ class CoroutinesDevice(
         val didConnect = try {
             connectionStateMonitor.suspendUntilConnectionState(STATE_CONNECTED)
         } catch (e: CancellationException) {
-            Timber.i { "connectGatt() canceled." }
+            Able.info { "connectGatt() canceled." }
             gatt.close()
             return ConnectGattCanceled(e)
         } finally {
@@ -80,7 +79,7 @@ class CoroutinesDevice(
         return if (didConnect) {
             ConnectGattSuccess(gatt)
         } else {
-            Timber.w { "connectGatt() failed." }
+            Able.warn { "connectGatt() failed." }
             gatt.close()
             return ConnectGattFailure(
                 IllegalStateException("Failed to connect to ${device.address}.")

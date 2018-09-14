@@ -25,9 +25,4 @@ artifacts {
 
 dependencies {
     api project(':core')
-
-    implementation "com.jakewharton.timber:timber:${versions.timber}"
-
-    // [TimberKt](https://github.com/ajalt/timberkt)
-    implementation "com.github.ajalt:timberkt:${versions.timberKt}"
 }

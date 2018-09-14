@@ -11,7 +11,7 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
-import com.github.ajalt.timberkt.Timber
+import com.juul.able.experimental.Able
 import com.juul.able.experimental.Gatt
 import com.juul.able.experimental.WriteType
 import com.juul.able.experimental.messenger.OnCharacteristicRead
@@ -81,10 +81,10 @@ class Retry(private val gatt: Gatt, timeoutDuration: Long, timeoutUnit: TimeUnit
             return
         }
 
-        Timber.v { "checkConnection → Begin" }
+        Able.verbose { "checkConnection → Begin" }
         onConnectionStateChange.openSubscription().also { subscription ->
             subscription.consumeEach { (_, newState) ->
-                Timber.v { "checkConnection → consumeEach → newState = $newState" }
+                Able.verbose { "checkConnection → consumeEach → newState = $newState" }
                 if (!isEnabled) {
                     subscription.cancel()
                     return
@@ -92,17 +92,17 @@ class Retry(private val gatt: Gatt, timeoutDuration: Long, timeoutUnit: TimeUnit
 
                 when (newState) {
                     STATE_DISCONNECTED -> {
-                        Timber.d { "checkConnection → consumeEach → STATE_DISCONNECTED" }
+                        Able.debug { "checkConnection → consumeEach → STATE_DISCONNECTED" }
                         gatt.requestConnect() || error("`BluetoothGatt.connect()` returned false.")
                     }
                     STATE_CONNECTED -> {
-                        Timber.d { "checkConnection → consumeEach → STATE_CONNECTED" }
+                        Able.debug { "checkConnection → consumeEach → STATE_CONNECTED" }
                         subscription.cancel()
                     }
                 }
-                Timber.v { "checkConnection → consumeEach → Repeat" }
+                Able.verbose { "checkConnection → consumeEach → Repeat" }
             }
-            Timber.v { "checkConnection → End" }
+            Able.verbose { "checkConnection → End" }
         }
     }
 
