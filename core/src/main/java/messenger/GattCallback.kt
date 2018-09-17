@@ -50,7 +50,7 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         BroadcastChannel<OnCharacteristicChanged>(config.onCharacteristicChangedCapacity)
 
     internal val onServicesDiscovered =
-        Channel<OnServicesDiscovered>(config.onServicesDiscoveredCapacity)
+        Channel<GattStatus>(config.onServicesDiscoveredCapacity)
     internal val onCharacteristicRead =
         Channel<OnCharacteristicRead>(config.onCharacteristicReadCapacity)
     internal val onCharacteristicWrite =
@@ -108,7 +108,7 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: GattStatus) {
         Able.verbose { "onServicesDiscovered → status = $status" }
-        if (!onServicesDiscovered.offer(OnServicesDiscovered(status))) {
+        if (!onServicesDiscovered.offer(status)) {
             Able.warn { "onServicesDiscovered → dropped" }
         }
         notifyGattReady()
