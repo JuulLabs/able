@@ -31,7 +31,7 @@ fun connect(context: Context, device: BluetoothDevice) = launch(UI) {
         // connect failed
     }
 
-    if (gatt.discoverServices().status != BluetoothGatt.GATT_SUCCESS) {
+    if (gatt.discoverServices() != BluetoothGatt.GATT_SUCCESS) {
         // discover services failed
     }
 

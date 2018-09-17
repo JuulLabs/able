@@ -54,8 +54,6 @@ data class OnConnectionStateChange(
     val newState: GattState
 )
 
-data class OnServicesDiscovered(val status: GattStatus)
-
 data class OnCharacteristicRead(
     val characteristic: BluetoothGattCharacteristic,
     val value: ByteArray,

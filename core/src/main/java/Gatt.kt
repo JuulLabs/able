@@ -18,7 +18,6 @@ import com.juul.able.experimental.messenger.OnCharacteristicWrite
 import com.juul.able.experimental.messenger.OnConnectionStateChange
 import com.juul.able.experimental.messenger.OnDescriptorWrite
 import com.juul.able.experimental.messenger.OnMtuChanged
-import com.juul.able.experimental.messenger.OnServicesDiscovered
 import kotlinx.coroutines.experimental.channels.BroadcastChannel
 import java.io.Closeable
 import java.util.UUID
@@ -71,7 +70,7 @@ interface Gatt : Closeable {
 
     suspend fun connect(): Boolean
     suspend fun disconnect(): Unit
-    suspend fun discoverServices(): OnServicesDiscovered
+    suspend fun discoverServices(): GattStatus
 
     suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic

@@ -26,7 +26,6 @@ import com.juul.able.experimental.messenger.OnCharacteristicWrite
 import com.juul.able.experimental.messenger.OnConnectionStateChange
 import com.juul.able.experimental.messenger.OnDescriptorWrite
 import com.juul.able.experimental.messenger.OnMtuChanged
-import com.juul.able.experimental.messenger.OnServicesDiscovered
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.channels.BroadcastChannel
 import java.util.UUID
@@ -75,7 +74,7 @@ class CoroutinesGatt(
     /**
      * @throws [RemoteException] if underlying [BluetoothGatt.discoverServices] returns `false`.
      */
-    override suspend fun discoverServices(): OnServicesDiscovered {
+    override suspend fun discoverServices(): GattStatus {
         Able.debug { "discoverServices → send(DiscoverServices)" }
 
         val response = CompletableDeferred<Boolean>()
@@ -88,7 +87,7 @@ class CoroutinesGatt(
         }
 
         Able.verbose { "discoverServices → Waiting for BluetoothGattCallback" }
-        return messenger.callback.onServicesDiscovered.receive().also { (status) ->
+        return messenger.callback.onServicesDiscovered.receive().also { status ->
             Able.info { "discoverServices, status=${status.asGattStatusString()}" }
         }
     }

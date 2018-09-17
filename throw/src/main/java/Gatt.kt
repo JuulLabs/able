@@ -24,7 +24,7 @@ suspend fun Gatt.connectOrThrow(): Unit {
  */
 suspend fun Gatt.discoverServicesOrThrow(): Unit {
     discoverServices()
-        .also { (status) ->
+        .also { status ->
             check(status == android.bluetooth.BluetoothGatt.GATT_SUCCESS) {
                 "Service discovery failed with gatt status $status."
             }
