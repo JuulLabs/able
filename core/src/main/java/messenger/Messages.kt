@@ -36,12 +36,6 @@ internal sealed class Message {
         override val response: CompletableDeferred<Boolean>
     ) : Message()
 
-    internal data class CharacteristicNotification(
-        val characteristic: BluetoothGattCharacteristic,
-        val enable: Boolean,
-        override val response: CompletableDeferred<Boolean>
-    ) : Message()
-
     internal data class WriteDescriptor(
         val descriptor: BluetoothGattDescriptor,
         val value: ByteArray,

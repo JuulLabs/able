@@ -20,6 +20,10 @@ import com.juul.able.experimental.messenger.OnDescriptorWrite
 import com.juul.able.experimental.messenger.OnMtuChanged
 import com.juul.able.experimental.messenger.OnServicesDiscovered
 import kotlinx.coroutines.experimental.channels.BroadcastChannel
+import kotlinx.coroutines.experimental.channels.ReceiveChannel
+import kotlinx.coroutines.experimental.channels.consumeEach
+import kotlinx.coroutines.experimental.channels.filter
+import kotlinx.coroutines.experimental.channels.produce
 import java.io.Closeable
 import java.util.UUID
 
@@ -90,13 +94,26 @@ interface Gatt : Closeable {
 
     suspend fun requestMtu(mtu: Int): OnMtuChanged
 
-    suspend fun setCharacteristicNotification(
+    fun setCharacteristicNotification(
         characteristic: BluetoothGattCharacteristic,
         enable: Boolean
     ): Boolean
-
 }
 
 suspend fun Gatt.writeCharacteristic(
     characteristic: BluetoothGattCharacteristic, value: ByteArray
 ): OnCharacteristicWrite = writeCharacteristic(characteristic, value, WRITE_TYPE_DEFAULT)
+
+fun Gatt.observeCharacteristic(
+    characteristic: BluetoothGattCharacteristic
+): ReceiveChannel<OnCharacteristicChanged> = produce {
+    setCharacteristicNotification(characteristic, true)
+    onCharacteristicChanged.openSubscription()
+        .filter { it.characteristic.uuid == characteristic.uuid }
+        .consumeEach {
+            send(it)
+        }
+    invokeOnClose {
+        setCharacteristicNotification(characteristic, false)
+    }
+}
