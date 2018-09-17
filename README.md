@@ -1,53 +1,142 @@
 # Able
 
-Provides a [Coroutines] powered interaction with Android's Bluetooth Low Energy (BLE) framework.
+Provides a Kotlin [Coroutines] powered interaction with **A**ndroid's **B**luetooth **L**ow
+**E**nergy (BLE) framework.
 
 ## API
 
-When feasible, the API closely matches the Android bluetooth API, replacing methods that traditionally rely on
-[`BluetoothGattCallback`] calls with [suspension functions].
+When feasible, the API closely matches the Android Bluetooth Low Energy API, replacing methods that
+traditionally rely on [`BluetoothGattCallback`] calls with [suspension functions].
 
-The primary entry point is the `BluetoothDevice.connectGatt(context: Context, autoConnect: Boolean): ConnectGattResult`.
-This method acts as a replacement for Android's
+<table>
+<tr>
+<td align="center">Android <a href="https://developer.android.com/reference/android/bluetooth/BluetoothDevice"><code>BluetoothDevice</code></a></td>
+<td align="center">Able <code>Device</code></td>
+</tr>
+<tr>
+<td><pre><code>fun connectGatt(
+    context: Context,
+    autoConnect: Boolean,
+    callback: BluetoothGattCallback
+): BluetoothGatt</code></pre></td>
+<td><pre><code>suspend fun connectGatt(
+    context: Context,
+    autoConnect: Boolean = false
+): ConnectGattResult</code><sup>1</sup></pre></td>
+</tr>
+</table>
+
+<sup>1</sup> _Suspends until `STATE_CONNECTED` or non-`GATT_SUCCESS` is received, then returns
+`ConnectGattResult`:_
+
+```kotlin
+sealed class ConnectGattResult {
+    data class ConnectGattSuccess(val gatt: Gatt) : ConnectGattResult()
+    data class ConnectGattCanceled(val cause: CancellationException) : ConnectGattResult()
+    data class ConnectGattFailure(val cause: Throwable) : ConnectGattResult()
+}
+```
+
+<table>
+<tr>
+<td align="center">Android <a href="https://developer.android.com/reference/android/bluetooth/BluetoothGatt"><code>BluetoothGatt</code></a></td>
+<td align="center">Able <code>Gatt</code></td>
+</tr>
+<tr>
+<td><pre><code>fun connect(): Boolean</code></pre></td>
+<td><pre><code>suspend fun connect(): Boolean</code><sup>1</sup></pre></td>
+</tr>
+<tr>
+<td><pre><code>fun disconnect(): Boolean</code></pre></td>
+<td><pre><code>suspend fun disconnect(): Unit</code><sup>2</sup></pre></td>
+</tr>
+<tr>
+<td><pre><code>fun discoverServices(): Boolean</code></pre></td>
+<td><pre><code>suspend fun discoverServices(): GattStatus</code><sup>2</sup></pre></td>
+</tr>
+<tr>
+<td><pre><code>fun getServices(): List<BluetoothGattService></code></pre></td>
+<td><pre><code>val services: List<BluetoothGattService></code></pre></td>
+</tr>
+<tr>
+<td><pre><code>fun getService(uuid: UUID): BluetoothGattService</code></pre></td>
+<td><pre><code>fun getService(uuid: UUID): BluetoothGattService</code></pre></td>
+</tr>
+<tr>
+<td><pre><code>fun readCharacteristic(
+    characteristic: BluetoothGattCharacteristic
+): Boolean</code></pre></td>
+<td><pre><code>suspend fun readCharacteristic(
+    characteristic: BluetoothGattCharacteristic
+): OnCharacteristicRead</code><sup>3</sup></pre></td>
+</tr>
+<tr>
+<td><pre><code>fun writeCharacteristic(
+    characteristic: BluetoothGattCharacteristic
+): Boolean</code></pre></td>
+<td><pre><code>suspend fun writeCharacteristic(
+    characteristic: BluetoothGattCharacteristic,
+    value: ByteArray,
+    writeType: WriteType
+): OnCharacteristicWrite</code><sup>3</sup></pre></td>
+</tr>
+<tr>
+<td><pre><code>fun writeDescriptor(
+    descriptor: BluetoothGattDescriptor
+): Boolean</code></pre></td>
+<td><pre><code>suspend fun writeDescriptor(
+    descriptor: BluetoothGattDescriptor,
+    value: ByteArray
+): OnDescriptorWrite</code><sup>3</sup></pre></td>
+</tr>
+<tr>
+<td><pre><code>fun requestMtu(mtu: Int): Boolean</code></pre></td>
+<td><pre><code>suspend fun requestMtu(mtu: Int): OnMtuChanged</code><sup>3</sup></pre></td>
+</tr>
+<tr>
+<td><pre><code>fun setCharacteristicNotification(
+    characteristic: BluetoothGattCharacteristic,
+    enable: Boolean
+): Boolean</code></pre></td>
+<td><pre><code>suspend fun setCharacteristicNotification(
+    characteristic: BluetoothGattCharacteristic,
+    enable: Boolean
+): Boolean</code><sup>3</sup></pre></td>
+</tr>
+</table>
+
+<sup>1</sup> _Suspends until `STATE_CONNECTED` or non-`GATT_SUCCESS` is received._<br/>
+<sup>2</sup> _Suspends until `STATE_DISCONNECTED` or non-`GATT_SUCCESS` is received._<br/>
+<sup>3</sup> _Throws `RemoteException` if underlying `BluetoothGatt` call returns `false`._
+
+### Details
+
+The primary entry point is the
+`BluetoothDevice.connectGatt(context: Context, autoConnect: Boolean): ConnectGattResult` extension
+function. This extension function acts as a replacement for Android's
 [`BluetoothDevice.connectGatt(context: Context, autoConnect: Boolean, callback: BluetoothCallback): BluetoothGatt?`]
 method (which relies on a [`BluetoothGattCallback`]).
 
-Upon connection success, the return will contain a `Gatt` object that provides suspension function versions of the
-[`BluetoothGatt`] that it wraps.
-
 ## Example
 
-As an example, the following code snippet makes a connection to a [`BluetoothDevice`], reads a characteristic, then
-disconnects:
+The following code snippet makes a connection to a [`BluetoothDevice`], reads a characteristic,
+then disconnects (_error handling omitted for simplicity_):
 
 ```kotlin
-fun connect(context: Context, device: BluetoothDevice) = launch(UI) {
-    val serviceUuid = "F000AA80-0451-4000-B000-000000000000".toUuid()
-    val characteristicUuid = "F000AA83-0451-4000-B000-000000000000".toUuid()
+val serviceUuid = "F000AA80-0451-4000-B000-000000000000".toUuid()
+val characteristicUuid = "F000AA83-0451-4000-B000-000000000000".toUuid()
 
-    val connectResult = device.connectGatt(context, autoConnect = false)
-    val gatt = (connectResult as? ConnectGattSuccess)?.gatt
-    if (gatt == null) {
-        // connect failed
+fun fetchCharacteristic(context: Context, device: BluetoothDevice) = launch {
+    device.connectGatt(context, autoConnect = false).let { (it as Success).gatt }.use { gatt ->
+        gatt.discoverServices()
+        val characteristic = gatt.getService(serviceUuid)!!.getCharacteristic(characteristicUuid)
+        println("value = ${gatt.readCharacteristic(characteristic).value}")
+        gatt.disconnect()
     }
-
-    if (gatt.discoverServices() != BluetoothGatt.GATT_SUCCESS) {
-        // discover services failed
-    }
-
-    val characteristic = gatt.getService(serviceUuid).getCharacteristic(characteristicUuid)
-
-    val result = gatt.readCharacteristic(characteristic)
-    if (result.status == BluetoothGatt.GATT_SUCCESS) {
-        toast("Data: ${result.value}")
-    } else {
-        // read characteristic failed
-    }
-
-    gatt.disconnect()
-    gatt.close()
 }
 ```
+
+See the [Recipes] page for more usage examples.
 
 # Setup
 
@@ -55,7 +144,7 @@ fun connect(context: Context, device: BluetoothDevice) = launch(UI) {
 
 [![JitPack version](https://jitpack.io/v/JuulLabs/able.svg)](https://jitpack.io/#JuulLabs/able)
 
-To use `able` in your Android project, setup your `build.gradle` as follows:
+To use **Able** in your Android project, setup your `build.gradle` as follows:
 
 ```groovy
 repositories {
@@ -92,3 +181,4 @@ limitations under the License.
 [`BluetoothDevice.connectGatt(context: Context, autoConnect: Boolean, callback: BluetoothCallback): BluetoothGatt?`]: https://developer.android.com/reference/android/bluetooth/BluetoothDevice.html#connectGatt(android.content.Context,%20boolean,%20android.bluetooth.BluetoothGattCallback)
 [Coroutines]: https://kotlinlang.org/docs/reference/coroutines.html
 [suspension functions]: https://kotlinlang.org/docs/reference/coroutines.html#suspending-functions
+[Recipes]: documentation/RECIPES.md
