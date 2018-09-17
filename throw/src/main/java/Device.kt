@@ -23,8 +23,8 @@ class ConnectionFailedException(cause: Throwable) : Exception(cause)
 suspend fun Device.connectGattOrThrow(context: Context, autoConnect: Boolean): Gatt {
     val result = connectGatt(context, autoConnect)
     return when (result) {
-        is ConnectGattResult.ConnectGattSuccess -> result.gatt
-        is ConnectGattResult.ConnectGattCanceled -> throw ConnectionCanceledException(result.cause)
-        is ConnectGattResult.ConnectGattFailure -> throw ConnectionFailedException(result.cause)
+        is ConnectGattResult.Success -> result.gatt
+        is ConnectGattResult.Canceled -> throw ConnectionCanceledException(result.cause)
+        is ConnectGattResult.Failure -> throw ConnectionFailedException(result.cause)
     }
 }
