@@ -8,9 +8,9 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGatt.STATE_CONNECTED
 import android.content.Context
-import com.juul.able.experimental.ConnectGattResult.ConnectGattCanceled
-import com.juul.able.experimental.ConnectGattResult.ConnectGattFailure
-import com.juul.able.experimental.ConnectGattResult.ConnectGattSuccess
+import com.juul.able.experimental.ConnectGattResult.Canceled
+import com.juul.able.experimental.ConnectGattResult.Failure
+import com.juul.able.experimental.ConnectGattResult.Success
 import com.juul.able.experimental.messenger.GattCallback
 import com.juul.able.experimental.messenger.GattCallbackConfig
 import com.juul.able.experimental.messenger.Messenger
@@ -61,7 +61,7 @@ class CoroutinesDevice(
      */
     override suspend fun connectGatt(context: Context, autoConnect: Boolean): ConnectGattResult {
         val gatt = requestConnectGatt(context, autoConnect)
-            ?: return ConnectGattFailure(
+            ?: return Failure(
                 NullPointerException("`BluetoothDevice.connectGatt` returned `null`.")
             )
         val connectionStateMonitor = ConnectionStateMonitor(gatt)
@@ -71,17 +71,17 @@ class CoroutinesDevice(
         } catch (e: CancellationException) {
             Able.info { "connectGatt() canceled." }
             gatt.close()
-            return ConnectGattCanceled(e)
+            return Canceled(e)
         } finally {
             connectionStateMonitor.close()
         }
 
         return if (didConnect) {
-            ConnectGattSuccess(gatt)
+            Success(gatt)
         } else {
             Able.warn { "connectGatt() failed." }
             gatt.close()
-            return ConnectGattFailure(
+            return Failure(
                 IllegalStateException("Failed to connect to ${device.address}.")
             )
         }
