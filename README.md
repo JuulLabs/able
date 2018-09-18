@@ -52,7 +52,7 @@ sealed class ConnectGattResult {
 </tr>
 <tr>
 <td><pre><code>fun discoverServices(): Boolean</code></pre></td>
-<td><pre><code>suspend fun discoverServices(): GattStatus</code><sup>2</sup></pre></td>
+<td><pre><code>suspend fun discoverServices(): GattStatus</code><sup>3</sup></pre></td>
 </tr>
 <tr>
 <td><pre><code>fun getServices(): List<BluetoothGattService></code></pre></td>
@@ -129,7 +129,7 @@ val characteristicUuid = "F000AA83-0451-4000-B000-000000000000".toUuid()
 fun fetchCharacteristic(context: Context, device: BluetoothDevice) = launch {
     device.connectGatt(context, autoConnect = false).let { (it as Success).gatt }.use { gatt ->
         gatt.discoverServices()
-        val characteristic = gatt.getService(serviceUuid)!!.getCharacteristic(characteristicUuid)
+        val characteristic = gatt.getService(serviceUuid)!!.getCharacteristic(characteristicUuid)!!
         println("value = ${gatt.readCharacteristic(characteristic).value}")
         gatt.disconnect()
     }
