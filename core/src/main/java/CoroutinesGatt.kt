@@ -71,94 +71,93 @@ class CoroutinesGatt(
     override fun getService(uuid: UUID): BluetoothGattService? = bluetoothGatt.getService(uuid)
 
     /**
-     * @throws [RemoteException] if underlying [BluetoothGatt.discoverServices] returns `false`.
+     * @return [GattStatus] or `null` if underlying [BluetoothGatt.discoverServices] returns `false`.
      */
-    override suspend fun discoverServices(): GattStatus {
+    override suspend fun discoverServices(): GattStatus? {
         Able.debug { "discoverServices → send(DiscoverServices)" }
 
         val response = CompletableDeferred<Boolean>()
         messenger.send(DiscoverServices(response))
 
-        val call = "BluetoothGatt.discoverServices()"
-        Able.verbose { "discoverServices → Waiting for $call" }
-        if (!response.await()) {
-            throw RemoteException("$call returned false.")
-        }
-
-        Able.verbose { "discoverServices → Waiting for BluetoothGattCallback" }
-        return messenger.callback.onServicesDiscovered.receive().also { status ->
-            Able.info { "discoverServices, status=${status.asGattStatusString()}" }
+        Able.verbose { "discoverServices → Waiting for BluetoothGatt.discoverServices()" }
+        return if (response.await()) {
+            Able.verbose { "discoverServices → Waiting for BluetoothGattCallback" }
+            messenger.callback.onServicesDiscovered.receive().also { status ->
+                Able.info { "discoverServices ← status=${status.asGattStatusString()}" }
+            }
+        } else {
+            Able.error { "BluetoothGatt.discoverServices() returned false." }
+            null
         }
     }
 
     /**
-     * @throws [RemoteException] if underlying [BluetoothGatt.readCharacteristic] returns `false`.
+     * @return [OnCharacteristicRead] or `null` if underlying [BluetoothGatt.readCharacteristic] returns `false`.
      */
     override suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
-    ): OnCharacteristicRead {
+    ): OnCharacteristicRead? {
         val uuid = characteristic.uuid
-        Able.debug { "readCharacteristic → send(ReadCharacteristic[uuid=$uuid])" }
+        Able.debug { "readCharacteristic → send(ReadCharacteristic($uuid))" }
 
         val response = CompletableDeferred<Boolean>()
         messenger.send(ReadCharacteristic(characteristic, response))
 
-        val call = "BluetoothGatt.readCharacteristic(BluetoothGattCharacteristic[uuid=$uuid])"
-        Able.verbose { "readCharacteristic → Waiting for $call" }
-        if (!response.await()) {
-            throw RemoteException("Failed to read characteristic with UUID $uuid.")
-        }
-
-        Able.verbose { "readCharacteristic → Waiting for BluetoothGattCallback" }
-        return messenger.callback.onCharacteristicRead.receive().also { (_, value, status) ->
-            Able.info {
-                val bytesString = value.size.bytesString
-                val statusString = status.asGattStatusString()
-                "← readCharacteristic $uuid ($bytesString), status=$statusString"
+        Able.verbose { "readCharacteristic → Waiting for BluetoothGatt.readCharacteristic($uuid)" }
+        return if (response.await()) {
+            Able.verbose { "readCharacteristic → Waiting for BluetoothGattCallback" }
+            messenger.callback.onCharacteristicRead.receive().also { (_, value, status) ->
+                Able.info {
+                    val bytesString = value.size.bytesString
+                    "readCharacteristic($uuid) ← $bytesString, ${status.asGattStatusString()}"
+                }
             }
+        } else {
+            Able.error { "BluetoothGatt.readCharacteristic($uuid) returned false." }
+            null
         }
     }
 
     /**
      * @param value applied to [characteristic] when characteristic is written.
      * @param writeType applied to [characteristic] when characteristic is written.
-     * @throws [RemoteException] if underlying [BluetoothGatt.writeCharacteristic] returns `false`.
+     * @return [OnCharacteristicWrite] or `null` if underlying [BluetoothGatt.writeCharacteristic] returns `false`.
      */
     override suspend fun writeCharacteristic(
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray,
         writeType: WriteType
-    ): OnCharacteristicWrite {
+    ): OnCharacteristicWrite? {
         val uuid = characteristic.uuid
         Able.debug { "writeCharacteristic → send(WriteCharacteristic[uuid=$uuid])" }
 
         val response = CompletableDeferred<Boolean>()
         messenger.send(WriteCharacteristic(characteristic, value, writeType, response))
 
-        val call = "BluetoothGatt.writeCharacteristic(BluetoothGattCharacteristic[uuid=$uuid])"
-        Able.verbose { "writeCharacteristic → Waiting for $call" }
-        if (!response.await()) {
-            throw RemoteException("$call returned false.")
-        }
-
-        Able.verbose { "writeCharacteristic → Waiting for BluetoothGattCallback" }
-        return messenger.callback.onCharacteristicWrite.receive().also { (_, status) ->
-            Able.info {
-                val bytesString = value.size.bytesString
-                val typeString = writeType.asWriteTypeString()
-                val statusString = status.asGattStatusString()
-                "→ writeCharacteristic $uuid ($bytesString), type=$typeString, status=$statusString"
+        Able.verbose { "writeCharacteristic → Waiting for BluetoothGatt.writeCharacteristic($uuid)" }
+        return if (response.await()) {
+            Able.verbose { "writeCharacteristic → Waiting for BluetoothGattCallback" }
+            messenger.callback.onCharacteristicWrite.receive().also { (_, status) ->
+                Able.info {
+                    val bytesString = value.size.bytesString
+                    val typeString = writeType.asWriteTypeString()
+                    val statusString = status.asGattStatusString()
+                    "→ writeCharacteristic $uuid ($bytesString), type=$typeString, status=$statusString"
+                }
             }
+        } else {
+            Able.error { "BluetoothGatt.writeCharacteristic($uuid) returned false." }
+            null
         }
     }
 
     /**
      * @param value applied to [descriptor] when descriptor is written.
-     * @throws [RemoteException] if underlying [BluetoothGatt.writeDescriptor] returns `false`.
+     * @return [OnDescriptorWrite] or `null` if underlying [BluetoothGatt.writeDescriptor] returns `false`.
      */
     override suspend fun writeDescriptor(
         descriptor: BluetoothGattDescriptor, value: ByteArray
-    ): OnDescriptorWrite {
+    ): OnDescriptorWrite? {
         val uuid = descriptor.uuid
         Able.debug { "writeDescriptor → send(WriteDescriptor[uuid=$uuid])" }
 
@@ -182,9 +181,9 @@ class CoroutinesGatt(
     }
 
     /**
-     * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
+     * @return [OnMtuChanged] or `null` if underlying [BluetoothGatt.requestMtu] returns `false`.
      */
-    override suspend fun requestMtu(mtu: Int): OnMtuChanged {
+    override suspend fun requestMtu(mtu: Int): OnMtuChanged? {
         Able.debug { "requestMtu → send(RequestMtu[mtu=$mtu])" }
 
         val response = CompletableDeferred<Boolean>()

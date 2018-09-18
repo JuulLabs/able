@@ -22,10 +22,12 @@ fun connect(context: Context, device: BluetoothDevice) = launch {
         // discover services failed
     }
 
-    val characteristic = gatt.getService(serviceUuid).getCharacteristic(characteristicUuid)
+    val service = gatt.getService(serviceUuid) ?: error("Service $serviceUuid not found.")
+    val characteristic = service.getCharacteristic(characteristicUuid)
+        ?: error("Characteristic $characteristicUuid not found.")
 
     val result = gatt.readCharacteristic(characteristic)
-    if (result.status == BluetoothGatt.GATT_SUCCESS) {
+    if (result?.status == BluetoothGatt.GATT_SUCCESS) {
         println("result.value = ${result.value}")
     } else {
         // read characteristic failed

@@ -52,15 +52,15 @@ sealed class ConnectGattResult {
 </tr>
 <tr>
 <td><pre><code>fun discoverServices(): Boolean</code></pre></td>
-<td><pre><code>suspend fun discoverServices(): GattStatus</code><sup>2</sup></pre></td>
+<td><pre><code>suspend fun discoverServices(): GattStatus?</code><sup>3</sup></pre></td>
 </tr>
 <tr>
 <td><pre><code>fun getServices(): List<BluetoothGattService></code></pre></td>
 <td><pre><code>val services: List<BluetoothGattService></code></pre></td>
 </tr>
 <tr>
-<td><pre><code>fun getService(uuid: UUID): BluetoothGattService</code></pre></td>
-<td><pre><code>fun getService(uuid: UUID): BluetoothGattService</code></pre></td>
+<td><pre><code>fun getService(uuid: UUID): BluetoothGattService?</code></pre></td>
+<td><pre><code>fun getService(uuid: UUID): BluetoothGattService?</code></pre></td>
 </tr>
 <tr>
 <td><pre><code>fun readCharacteristic(
@@ -68,7 +68,7 @@ sealed class ConnectGattResult {
 ): Boolean</code></pre></td>
 <td><pre><code>suspend fun readCharacteristic(
     characteristic: BluetoothGattCharacteristic
-): OnCharacteristicRead</code><sup>3</sup></pre></td>
+): OnCharacteristicRead?</code><sup>3</sup></pre></td>
 </tr>
 <tr>
 <td><pre><code>fun writeCharacteristic(
@@ -78,7 +78,7 @@ sealed class ConnectGattResult {
     characteristic: BluetoothGattCharacteristic,
     value: ByteArray,
     writeType: WriteType
-): OnCharacteristicWrite</code><sup>3</sup></pre></td>
+): OnCharacteristicWrite?</code><sup>3</sup></pre></td>
 </tr>
 <tr>
 <td><pre><code>fun writeDescriptor(
@@ -87,11 +87,11 @@ sealed class ConnectGattResult {
 <td><pre><code>suspend fun writeDescriptor(
     descriptor: BluetoothGattDescriptor,
     value: ByteArray
-): OnDescriptorWrite</code><sup>3</sup></pre></td>
+): OnDescriptorWrite?</code><sup>3</sup></pre></td>
 </tr>
 <tr>
 <td><pre><code>fun requestMtu(mtu: Int): Boolean</code></pre></td>
-<td><pre><code>suspend fun requestMtu(mtu: Int): OnMtuChanged</code><sup>3</sup></pre></td>
+<td><pre><code>suspend fun requestMtu(mtu: Int): OnMtuChanged?</code><sup>3</sup></pre></td>
 </tr>
 <tr>
 <td><pre><code>fun setCharacteristicNotification(
@@ -107,7 +107,7 @@ sealed class ConnectGattResult {
 
 <sup>1</sup> _Suspends until `STATE_CONNECTED` or non-`GATT_SUCCESS` is received._<br/>
 <sup>2</sup> _Suspends until `STATE_DISCONNECTED` or non-`GATT_SUCCESS` is received._<br/>
-<sup>3</sup> _Throws `RemoteException` if underlying `BluetoothGatt` call returns `false`._
+<sup>3</sup> _Returns `null` if underlying `BluetoothGatt` call returns `false`._
 
 ### Details
 
@@ -130,7 +130,7 @@ fun fetchCharacteristic(context: Context, device: BluetoothDevice) = launch {
     device.connectGatt(context, autoConnect = false).let { (it as Success).gatt }.use { gatt ->
         gatt.discoverServices()
         val characteristic = gatt.getService(serviceUuid)!!.getCharacteristic(characteristicUuid)
-        println("value = ${gatt.readCharacteristic(characteristic).value}")
+        println("value = ${gatt.readCharacteristic(characteristic)?.value}")
         gatt.disconnect()
     }
 }

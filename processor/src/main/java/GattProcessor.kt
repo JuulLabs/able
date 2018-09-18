@@ -21,21 +21,21 @@ class GattProcessor(
 
     override suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
-    ): OnCharacteristicRead {
-        val onCharacteristicRead = gatt.readCharacteristic(characteristic)
+    ): OnCharacteristicRead? {
+        return gatt.readCharacteristic(characteristic)?.let { onCharacteristicRead ->
+            val value = processors.fold(onCharacteristicRead.value) { processed, processor ->
+                processor.readCharacteristic(characteristic, processed)
+            }
 
-        val processedValue = processors.fold(onCharacteristicRead.value) { processed, processor ->
-            processor.readCharacteristic(characteristic, processed)
+            onCharacteristicRead.copy(value = value)
         }
-
-        return onCharacteristicRead.copy(value = processedValue)
     }
 
     override suspend fun writeCharacteristic(
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray,
         writeType: WriteType
-    ): OnCharacteristicWrite {
+    ): OnCharacteristicWrite? {
         val processedValue = processors.fold(value) { processed, processor ->
             processor.writeCharacteristic(characteristic, processed, writeType)
         }
@@ -46,7 +46,7 @@ class GattProcessor(
     override suspend fun writeDescriptor(
         descriptor: BluetoothGattDescriptor,
         value: ByteArray
-    ): OnDescriptorWrite {
+    ): OnDescriptorWrite? {
         val processedValue = processors.fold(value) { processed, processor ->
             processor.writeDescriptor(descriptor, processed)
         }

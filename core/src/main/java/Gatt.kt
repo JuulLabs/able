@@ -70,24 +70,24 @@ interface Gatt : Closeable {
 
     suspend fun connect(): Boolean
     suspend fun disconnect(): Unit
-    suspend fun discoverServices(): GattStatus
+    suspend fun discoverServices(): GattStatus?
 
     suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
-    ): OnCharacteristicRead
+    ): OnCharacteristicRead?
 
     suspend fun writeCharacteristic(
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray,
         writeType: WriteType
-    ): OnCharacteristicWrite
+    ): OnCharacteristicWrite?
 
     suspend fun writeDescriptor(
         descriptor: BluetoothGattDescriptor,
         value: ByteArray
-    ): OnDescriptorWrite
+    ): OnDescriptorWrite?
 
-    suspend fun requestMtu(mtu: Int): OnMtuChanged
+    suspend fun requestMtu(mtu: Int): OnMtuChanged?
 
     fun setCharacteristicNotification(
         characteristic: BluetoothGattCharacteristic,
@@ -97,4 +97,4 @@ interface Gatt : Closeable {
 
 suspend fun Gatt.writeCharacteristic(
     characteristic: BluetoothGattCharacteristic, value: ByteArray
-): OnCharacteristicWrite = writeCharacteristic(characteristic, value, WRITE_TYPE_DEFAULT)
+): OnCharacteristicWrite? = writeCharacteristic(characteristic, value, WRITE_TYPE_DEFAULT)

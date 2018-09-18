@@ -6,11 +6,13 @@
 
 package com.juul.able.experimental.retry
 
+import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
+import android.os.RemoteException
 import com.juul.able.experimental.Able
 import com.juul.able.experimental.Gatt
 import com.juul.able.experimental.WriteType
@@ -132,6 +134,7 @@ class Retry(private val gatt: Gatt, timeoutDuration: Long, timeoutUnit: TimeUnit
      *
      * @throws [TimeoutCancellationException] if timeout occurs.
      * @throws [IllegalStateException] if [checkConnection] calls [Gatt.connect] and it returns `false`.
+     * @throws [RemoteException] if underlying [BluetoothGatt.readCharacteristic] returns `false`.
      */
     override suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
@@ -141,6 +144,7 @@ class Retry(private val gatt: Gatt, timeoutDuration: Long, timeoutUnit: TimeUnit
             do {
                 checkConnection()
                 result = gatt.readCharacteristic(characteristic)
+                    ?: throw RemoteException("BluetoothGatt.readCharacteristic returned false.")
             } while (result.status != GATT_SUCCESS && isEnabled)
             result
         }
@@ -151,6 +155,7 @@ class Retry(private val gatt: Gatt, timeoutDuration: Long, timeoutUnit: TimeUnit
      *
      * @throws [TimeoutCancellationException] if timeout occurs.
      * @throws [IllegalStateException] if [checkConnection] calls [Gatt.connect] and it returns `false`.
+     * @throws [RemoteException] if underlying [BluetoothGatt.writeCharacteristic] returns `false`.
      */
     override suspend fun writeCharacteristic(
         characteristic: BluetoothGattCharacteristic,
@@ -162,6 +167,7 @@ class Retry(private val gatt: Gatt, timeoutDuration: Long, timeoutUnit: TimeUnit
             do {
                 checkConnection()
                 result = gatt.writeCharacteristic(characteristic, value, writeType)
+                    ?: throw RemoteException("BluetoothGatt.writeCharacteristic returned false.")
             } while (result.status != GATT_SUCCESS && isEnabled)
             result
         }
@@ -172,6 +178,7 @@ class Retry(private val gatt: Gatt, timeoutDuration: Long, timeoutUnit: TimeUnit
      *
      * @throws [TimeoutCancellationException] if timeout occurs.
      * @throws [IllegalStateException] if [checkConnection] calls [Gatt.connect] and it returns `false`.
+     * @throws [RemoteException] if underlying [BluetoothGatt.writeDescriptor] returns `false`.
      */
     override suspend fun writeDescriptor(
         descriptor: BluetoothGattDescriptor,
@@ -182,6 +189,7 @@ class Retry(private val gatt: Gatt, timeoutDuration: Long, timeoutUnit: TimeUnit
             do {
                 checkConnection()
                 result = gatt.writeDescriptor(descriptor, value)
+                    ?: throw RemoteException("BluetoothGatt.writeDescriptor returned false.")
             } while (result.status != GATT_SUCCESS && isEnabled)
             result
         }
