@@ -98,10 +98,10 @@ sealed class ConnectGattResult {
     characteristic: BluetoothGattCharacteristic,
     enable: Boolean
 ): Boolean</code></pre></td>
-<td><pre><code>suspend fun setCharacteristicNotification(
+<td><pre><code>fun setCharacteristicNotification(
     characteristic: BluetoothGattCharacteristic,
     enable: Boolean
-): Boolean</code><sup>3</sup></pre></td>
+): Boolean</code></pre></td>
 </tr>
 </table>
 
