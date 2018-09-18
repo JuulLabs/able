@@ -89,11 +89,10 @@ interface Gatt : Closeable {
 
     suspend fun requestMtu(mtu: Int): OnMtuChanged
 
-    suspend fun setCharacteristicNotification(
+    fun setCharacteristicNotification(
         characteristic: BluetoothGattCharacteristic,
         enable: Boolean
     ): Boolean
-
 }
 
 suspend fun Gatt.writeCharacteristic(

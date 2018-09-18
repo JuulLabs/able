@@ -186,25 +186,4 @@ class Retry(private val gatt: Gatt, timeoutDuration: Long, timeoutUnit: TimeUnit
             result
         }
     }
-
-    /**
-     * Sets (and retries if necessary) characteristic notification, connecting to [Gatt] as needed.
-     *
-     * @throws [TimeoutCancellationException] if timeout occurs.
-     * @throws [IllegalStateException] if [checkConnection] calls [Gatt.connect] and it returns `false`.
-     */
-    override suspend fun setCharacteristicNotification(
-        characteristic: BluetoothGattCharacteristic,
-        enable: Boolean
-    ): Boolean {
-        return withTimeoutLock(timeoutMillis) {
-            var result: Boolean
-            do {
-                checkConnection()
-                result = gatt.setCharacteristicNotification(characteristic, enable)
-            } while (!result && isEnabled)
-            result
-        }
-    }
-
 }

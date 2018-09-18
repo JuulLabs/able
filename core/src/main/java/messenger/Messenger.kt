@@ -6,7 +6,6 @@ package com.juul.able.experimental.messenger
 
 import android.bluetooth.BluetoothGatt
 import com.juul.able.experimental.Able
-import com.juul.able.experimental.messenger.Message.CharacteristicNotification
 import com.juul.able.experimental.messenger.Message.DiscoverServices
 import com.juul.able.experimental.messenger.Message.ReadCharacteristic
 import com.juul.able.experimental.messenger.Message.RequestMtu
@@ -35,15 +34,6 @@ class Messenger internal constructor(
                 is DiscoverServices -> bluetoothGatt.discoverServices()
                 is ReadCharacteristic -> bluetoothGatt.readCharacteristic(message.characteristic)
                 is RequestMtu -> bluetoothGatt.requestMtu(message.mtu)
-                is CharacteristicNotification ->
-                    bluetoothGatt.setCharacteristicNotification(
-                        message.characteristic,
-                        message.enable
-                    ).also {
-                        // We release the lock right away because `setCharacteristicNotification`
-                        // does not result in a `BluetoothGattCallback` method being invoked.
-                        callback.notifyGattReady()
-                    }
                 is WriteCharacteristic -> {
                     message.characteristic.value = message.value
                     message.characteristic.writeType = message.writeType

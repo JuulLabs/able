@@ -13,7 +13,6 @@ import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.os.RemoteException
-import com.juul.able.experimental.messenger.Message.CharacteristicNotification
 import com.juul.able.experimental.messenger.Message.DiscoverServices
 import com.juul.able.experimental.messenger.Message.ReadCharacteristic
 import com.juul.able.experimental.messenger.Message.RequestMtu
@@ -203,26 +202,12 @@ class CoroutinesGatt(
         }
     }
 
-    /**
-     * @throws [RemoteException] if underlying [BluetoothGatt.setCharacteristicNotification] returns `false`.
-     */
-    override suspend fun setCharacteristicNotification(
+    override fun setCharacteristicNotification(
         characteristic: BluetoothGattCharacteristic,
         enable: Boolean
     ): Boolean {
-        val response = CompletableDeferred<Boolean>()
-        messenger.send(CharacteristicNotification(characteristic, enable, response))
-
-        val uuid = characteristic.uuid
-        val call = "BluetoothGatt.setCharacteristicNotification(" +
-            "BluetoothGattCharacteristic[uuid=$uuid], enabled=$enable)"
-        Able.verbose { "requestMtu → Waiting for $call" }
-        if (!response.await()) {
-            throw RemoteException("$call returned false.")
-        }
-
-        Able.info { "setCharacteristicNotification $uuid enable=$enable" }
-        return true
+        Able.info { "setCharacteristicNotification ${characteristic.uuid} enable=$enable" }
+        return bluetoothGatt.setCharacteristicNotification(characteristic, enable)
     }
 }
 
