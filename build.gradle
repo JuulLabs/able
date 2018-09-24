@@ -19,8 +19,8 @@ buildscript {
 
         'able': getVersionName(),
 
-        'kotlin': '1.2.51',
-        'coroutines': '0.24.0',
+        'kotlin': '1.2.61',
+        'coroutines': '0.26.1',
 
         'kotlinTestJunit': '1.2.51',
         'mockitoKotlin': '2.0.0-RC1',
@@ -53,6 +53,7 @@ allprojects {
 subprojects {
     tasks.withType(Test) {
         testLogging {
+            // For more verbosity add: "standardOut", "standardError"
             events "passed", "skipped", "failed"
             exceptionFormat "full"
             showExceptions true

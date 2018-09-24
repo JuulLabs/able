@@ -11,6 +11,7 @@ import com.juul.able.experimental.messenger.Message.ReadCharacteristic
 import com.juul.able.experimental.messenger.Message.RequestMtu
 import com.juul.able.experimental.messenger.Message.WriteCharacteristic
 import com.juul.able.experimental.messenger.Message.WriteDescriptor
+import kotlinx.coroutines.experimental.GlobalScope
 import kotlinx.coroutines.experimental.channels.actor
 import kotlinx.coroutines.experimental.channels.consumeEach
 import kotlinx.coroutines.experimental.newSingleThreadContext
@@ -23,7 +24,7 @@ class Messenger internal constructor(
     internal suspend fun send(message: Message) = actor.send(message)
 
     private val context = newSingleThreadContext("Gatt")
-    private val actor = actor<Message>(context) {
+    private val actor = GlobalScope.actor<Message>(context) {
         Able.verbose { "Begin" }
         consumeEach { message ->
             Able.debug { "Waiting for Gatt" }
