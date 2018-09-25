@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGatt.STATE_CONNECTED
 import android.content.Context
+import android.os.RemoteException
 import com.juul.able.experimental.ConnectGattResult.Canceled
 import com.juul.able.experimental.ConnectGattResult.Failure
 import com.juul.able.experimental.ConnectGattResult.Success
@@ -62,7 +63,7 @@ class CoroutinesDevice(
     override suspend fun connectGatt(context: Context, autoConnect: Boolean): ConnectGattResult {
         val gatt = requestConnectGatt(context, autoConnect)
             ?: return Failure(
-                NullPointerException("`BluetoothDevice.connectGatt` returned `null`.")
+                RemoteException("`BluetoothDevice.connectGatt` returned `null`.")
             )
         val connectionStateMonitor = ConnectionStateMonitor(gatt)
 
