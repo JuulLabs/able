@@ -11,8 +11,8 @@ import android.content.Context
 import com.juul.able.experimental.ConnectGattResult
 import com.juul.able.experimental.CoroutinesDevice
 import com.juul.able.experimental.Gatt
+import com.juul.able.experimental.GattCallbackConfig
 import com.juul.able.experimental.connectGattOrNull
-import com.juul.able.experimental.messenger.GattCallbackConfig
 
 fun BluetoothDevice.asCoroutinesDevice(
     callbackConfig: GattCallbackConfig = GattCallbackConfig()

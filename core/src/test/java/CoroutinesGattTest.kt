@@ -8,9 +8,6 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
-import com.juul.able.experimental.messenger.GattCallback
-import com.juul.able.experimental.messenger.GattCallbackConfig
-import com.juul.able.experimental.messenger.Messenger
 import com.nhaarman.mockitokotlin2.mock
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.runBlocking
@@ -44,8 +41,7 @@ class CoroutinesGattTest {
         val callback = GattCallback(GattCallbackConfig(onCharacteristicChangedCapacity)).apply {
             onConnectionStateChange(bluetoothGatt, GATT_SUCCESS, STATE_CONNECTED)
         }
-        val messenger = Messenger(bluetoothGatt, callback)
-        val gatt = CoroutinesGatt(bluetoothGatt, messenger)
+        val gatt = CoroutinesGatt(bluetoothGatt, callback)
 
         val binderThreads = FakeBinderThreadHandler(numberOfFakeBinderThreads)
         for (i in 0..numberOfFakeCharacteristicNotifications) {

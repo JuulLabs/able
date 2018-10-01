@@ -2,7 +2,7 @@
  * Copyright 2018 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental.messenger
+package com.juul.able.experimental
 
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
@@ -11,11 +11,6 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
-import com.juul.able.experimental.Able
-import com.juul.able.experimental.GattState
-import com.juul.able.experimental.GattStatus
-import com.juul.able.experimental.asGattConnectionStatusString
-import com.juul.able.experimental.asGattStateString
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
@@ -42,7 +37,8 @@ data class GattCallbackConfig(
     )
 }
 
-internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback() {
+@Suppress("TooManyFunctions") // We're at the mercy of Android's BluetoothGattCallback.
+class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback() {
 
     internal val onConnectionStateChange =
         BroadcastChannel<OnConnectionStateChange>(Channel.CONFLATED)
@@ -82,7 +78,7 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         onDescriptorWrite.close()
         onReliableWriteCompleted.close()
 
-        Able.verbose { "close → End" }
+        Able.verbose { "close ← End" }
     }
 
     override fun onConnectionStateChange(
@@ -93,11 +89,11 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         Able.debug {
             val statusString = status.asGattConnectionStatusString()
             val stateString = newState.asGattStateString()
-            "onConnectionStateChange → status = $statusString, newState = $stateString"
+            "onConnectionStateChange ← status=$statusString, newState=$stateString"
         }
 
         if (!onConnectionStateChange.offer(OnConnectionStateChange(status, newState))) {
-            Able.warn { "onConnectionStateChange → dropped" }
+            Able.warn { "onConnectionStateChange ↓ dropped" }
         }
 
         when (newState) {
@@ -107,9 +103,9 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
     }
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: GattStatus) {
-        Able.verbose { "onServicesDiscovered → status = $status" }
+        Able.verbose { "onServicesDiscovered ← status=${status.asGattStatusString()}" }
         if (!onServicesDiscovered.offer(status)) {
-            Able.warn { "onServicesDiscovered → dropped" }
+            Able.warn { "onServicesDiscovered ↓ dropped" }
         }
         notifyGattReady()
     }
@@ -119,10 +115,13 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         characteristic: BluetoothGattCharacteristic,
         status: GattStatus
     ) {
-        Able.verbose { "onCharacteristicRead → uuid = ${characteristic.uuid}" }
-        val event = OnCharacteristicRead(characteristic, characteristic.value, status)
+        val value = characteristic.value
+        Able.verbose {
+            "onCharacteristicRead ← uuid=${characteristic.uuid}, value.size=${value.size}"
+        }
+        val event = OnCharacteristicRead(characteristic, value, status)
         if (!onCharacteristicRead.offer(event)) {
-            Able.warn { "onCharacteristicRead → dropped" }
+            Able.warn { "onCharacteristicRead ↓ dropped" }
         }
         notifyGattReady()
     }
@@ -132,9 +131,12 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         characteristic: BluetoothGattCharacteristic,
         status: GattStatus
     ) {
-        Able.verbose { "onCharacteristicWrite → uuid = ${characteristic.uuid}" }
+        Able.verbose {
+            val uuid = characteristic.uuid
+            "onCharacteristicWrite ← uuid=$uuid, status=${status.asGattStatusString()}"
+        }
         if (!onCharacteristicWrite.offer(OnCharacteristicWrite(characteristic, status))) {
-            Able.warn { "onCharacteristicWrite → dropped" }
+            Able.warn { "onCharacteristicWrite ↓ dropped" }
         }
         notifyGattReady()
     }
@@ -143,10 +145,12 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         gatt: BluetoothGatt,
         characteristic: BluetoothGattCharacteristic
     ) {
-        Able.verbose { "onCharacteristicChanged → uuid = ${characteristic.uuid}" }
-        val event = OnCharacteristicChanged(characteristic, characteristic.value)
-        if (!onCharacteristicChanged.offer(event)) {
-            Able.warn { "OnCharacteristicChanged → dropped" }
+        val value = characteristic.value
+        Able.verbose {
+            "onCharacteristicChanged ← uuid=${characteristic.uuid}, value.size=${value.size}"
+        }
+        if (!onCharacteristicChanged.offer(OnCharacteristicChanged(characteristic, value))) {
+            Able.warn { "OnCharacteristicChanged ↓ dropped" }
         }
 
         // We don't call `notifyGattReady` because `onCharacteristicChanged` is called whenever a
@@ -159,9 +163,15 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         descriptor: BluetoothGattDescriptor,
         status: GattStatus
     ) {
-        Able.verbose { "onDescriptorRead → uuid = ${descriptor.uuid}" }
-        if (!onDescriptorRead.offer(OnDescriptorRead(descriptor, descriptor.value, status))) {
-            Able.warn { "onDescriptorRead → dropped" }
+        val value = descriptor.value
+        Able.verbose {
+            val uuid = descriptor.uuid
+            val size = value.size
+            val gattStatus = status.asGattStatusString()
+            "onDescriptorRead ← uuid=$uuid, value.size=$size, status=$gattStatus"
+        }
+        if (!onDescriptorRead.offer(OnDescriptorRead(descriptor, value, status))) {
+            Able.warn { "onDescriptorRead ↓ dropped" }
         }
         notifyGattReady()
     }
@@ -171,25 +181,27 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         descriptor: BluetoothGattDescriptor,
         status: GattStatus
     ) {
-        Able.verbose { "onDescriptorWrite → uuid = ${descriptor.uuid}" }
+        Able.verbose {
+            "onDescriptorWrite ← uuid=${descriptor.uuid}, status=${status.asGattStatusString()}"
+        }
         if (!onDescriptorWrite.offer(OnDescriptorWrite(descriptor, status))) {
-            Able.warn { "onDescriptorWrite → dropped" }
+            Able.warn { "onDescriptorWrite ↓ dropped" }
         }
         notifyGattReady()
     }
 
     override fun onReliableWriteCompleted(gatt: BluetoothGatt, status: Int) {
-        Able.verbose { "onReliableWriteCompleted → status = $status" }
+        Able.verbose { "onReliableWriteCompleted ← status=${status.asGattStatusString()}" }
         if (!onReliableWriteCompleted.offer(OnReliableWriteCompleted(status))) {
-            Able.warn { "onReliableWriteCompleted → dropped" }
+            Able.warn { "onReliableWriteCompleted ↓ dropped" }
         }
         notifyGattReady()
     }
 
     override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
-        Able.verbose { "onMtuChanged → status = $status" }
+        Able.verbose { "onMtuChanged ← mtu=$mtu, status=${status.asGattStatusString()}" }
         if (!onMtuChanged.offer(OnMtuChanged(mtu, status))) {
-            Able.warn { "onMtuChanged → dropped" }
+            Able.warn { "onMtuChanged ↓ dropped" }
         }
         notifyGattReady()
     }

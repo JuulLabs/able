@@ -8,7 +8,6 @@ package com.juul.able.experimental
 
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothProfile
-import com.juul.able.experimental.messenger.OnConnectionStateChange
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.sync.Mutex

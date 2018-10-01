@@ -12,12 +12,6 @@ import android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile
-import com.juul.able.experimental.messenger.OnCharacteristicChanged
-import com.juul.able.experimental.messenger.OnCharacteristicRead
-import com.juul.able.experimental.messenger.OnCharacteristicWrite
-import com.juul.able.experimental.messenger.OnConnectionStateChange
-import com.juul.able.experimental.messenger.OnDescriptorWrite
-import com.juul.able.experimental.messenger.OnMtuChanged
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BroadcastChannel
 import java.io.Closeable
@@ -97,5 +91,6 @@ interface Gatt : Closeable, CoroutineScope {
 }
 
 suspend fun Gatt.writeCharacteristic(
-    characteristic: BluetoothGattCharacteristic, value: ByteArray
+    characteristic: BluetoothGattCharacteristic,
+    value: ByteArray
 ): OnCharacteristicWrite = writeCharacteristic(characteristic, value, WRITE_TYPE_DEFAULT)

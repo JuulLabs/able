@@ -8,11 +8,11 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.content.Context
 import com.juul.able.experimental.Gatt
+import com.juul.able.experimental.GattCallbackConfig
 import com.juul.able.experimental.android.asCoroutinesDevice
-import com.juul.able.experimental.messenger.GattCallbackConfig
-import com.juul.able.experimental.throwable.connectGattOrThrow
 import com.juul.able.experimental.throwable.ConnectionCanceledException
 import com.juul.able.experimental.throwable.ConnectionFailedException
+import com.juul.able.experimental.throwable.connectGattOrThrow
 import kotlinx.coroutines.CancellationException
 
 /**

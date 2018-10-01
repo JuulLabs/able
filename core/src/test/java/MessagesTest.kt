@@ -6,9 +6,6 @@ package com.juul.able.experimental
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import com.juul.able.experimental.messenger.OnCharacteristicChanged
-import com.juul.able.experimental.messenger.OnCharacteristicRead
-import com.juul.able.experimental.messenger.OnDescriptorRead
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import nl.jqno.equalsverifier.EqualsVerifier

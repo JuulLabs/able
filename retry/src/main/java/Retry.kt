@@ -13,10 +13,10 @@ import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import com.juul.able.experimental.Able
 import com.juul.able.experimental.Gatt
+import com.juul.able.experimental.OnCharacteristicRead
+import com.juul.able.experimental.OnCharacteristicWrite
+import com.juul.able.experimental.OnDescriptorWrite
 import com.juul.able.experimental.WriteType
-import com.juul.able.experimental.messenger.OnCharacteristicRead
-import com.juul.able.experimental.messenger.OnCharacteristicWrite
-import com.juul.able.experimental.messenger.OnDescriptorWrite
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.sync.Mutex

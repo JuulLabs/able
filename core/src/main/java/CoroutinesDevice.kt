@@ -12,9 +12,6 @@ import android.os.RemoteException
 import com.juul.able.experimental.ConnectGattResult.Canceled
 import com.juul.able.experimental.ConnectGattResult.Failure
 import com.juul.able.experimental.ConnectGattResult.Success
-import com.juul.able.experimental.messenger.GattCallback
-import com.juul.able.experimental.messenger.GattCallbackConfig
-import com.juul.able.experimental.messenger.Messenger
 import kotlinx.coroutines.CancellationException
 
 class CoroutinesDevice(
@@ -31,8 +28,7 @@ class CoroutinesDevice(
     private fun requestConnectGatt(context: Context, autoConnect: Boolean): CoroutinesGatt? {
         val callback = GattCallback(callbackConfig)
         val bluetoothGatt = device.connectGatt(context, autoConnect, callback) ?: return null
-        val messenger = Messenger(bluetoothGatt, callback)
-        return CoroutinesGatt(bluetoothGatt, messenger)
+        return CoroutinesGatt(bluetoothGatt, callback)
     }
 
     /**

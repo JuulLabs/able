@@ -13,15 +13,15 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.content.Context
 import com.juul.able.experimental.ConnectGattResult
+import com.juul.able.experimental.GattCallbackConfig
 import com.juul.able.experimental.GattStatus
+import com.juul.able.experimental.OnCharacteristicChanged
+import com.juul.able.experimental.OnCharacteristicRead
+import com.juul.able.experimental.OnConnectionStateChange
+import com.juul.able.experimental.OnDescriptorWrite
+import com.juul.able.experimental.OnMtuChanged
 import com.juul.able.experimental.WriteType
 import com.juul.able.experimental.device.CoroutinesGattDevices
-import com.juul.able.experimental.messenger.GattCallbackConfig
-import com.juul.able.experimental.messenger.OnCharacteristicChanged
-import com.juul.able.experimental.messenger.OnCharacteristicRead
-import com.juul.able.experimental.messenger.OnConnectionStateChange
-import com.juul.able.experimental.messenger.OnDescriptorWrite
-import com.juul.able.experimental.messenger.OnMtuChanged
 import kotlinx.coroutines.channels.BroadcastChannel
 import java.util.UUID
 

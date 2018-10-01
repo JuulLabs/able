@@ -7,10 +7,10 @@ package com.juul.able.experimental.processor
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import com.juul.able.experimental.Gatt
+import com.juul.able.experimental.OnCharacteristicRead
+import com.juul.able.experimental.OnCharacteristicWrite
+import com.juul.able.experimental.OnDescriptorWrite
 import com.juul.able.experimental.WriteType
-import com.juul.able.experimental.messenger.OnCharacteristicRead
-import com.juul.able.experimental.messenger.OnCharacteristicWrite
-import com.juul.able.experimental.messenger.OnDescriptorWrite
 
 fun Gatt.withProcessors(vararg processors: Processor) = GattProcessor(this, processors)
 

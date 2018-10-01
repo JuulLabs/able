@@ -13,22 +13,14 @@ import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.os.RemoteException
-import com.juul.able.experimental.messenger.Message.DiscoverServices
-import com.juul.able.experimental.messenger.Message.ReadCharacteristic
-import com.juul.able.experimental.messenger.Message.RequestMtu
-import com.juul.able.experimental.messenger.Message.WriteCharacteristic
-import com.juul.able.experimental.messenger.Message.WriteDescriptor
-import com.juul.able.experimental.messenger.Messenger
-import com.juul.able.experimental.messenger.OnCharacteristicChanged
-import com.juul.able.experimental.messenger.OnCharacteristicRead
-import com.juul.able.experimental.messenger.OnCharacteristicWrite
-import com.juul.able.experimental.messenger.OnConnectionStateChange
-import com.juul.able.experimental.messenger.OnDescriptorWrite
-import com.juul.able.experimental.messenger.OnMtuChanged
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 
@@ -36,7 +28,8 @@ class GattClosed(message: String, cause: Throwable) : IllegalStateException(mess
 
 class CoroutinesGatt(
     private val bluetoothGatt: BluetoothGatt,
-    private val messenger: Messenger
+    private val callback: GattCallback,
+    private val dispatcher: CoroutineDispatcher = newSingleThreadContext("Gatt")
 ) : Gatt {
 
     private val job = Job()
@@ -46,10 +39,10 @@ class CoroutinesGatt(
     private val connectionStateMonitor by lazy { ConnectionStateMonitor(this) }
 
     override val onConnectionStateChange: BroadcastChannel<OnConnectionStateChange>
-        get() = messenger.callback.onConnectionStateChange
+        get() = callback.onConnectionStateChange
 
     override val onCharacteristicChanged: BroadcastChannel<OnCharacteristicChanged>
-        get() = messenger.callback.onCharacteristicChanged
+        get() = callback.onCharacteristicChanged
 
     override fun requestConnect(): Boolean = bluetoothGatt.connect()
     override fun requestDisconnect(): Unit = bluetoothGatt.disconnect()
@@ -72,7 +65,18 @@ class CoroutinesGatt(
         Able.verbose { "close → Begin" }
         job.cancel()
         connectionStateMonitor.close()
-        messenger.close()
+        callback.close()
+
+        if (dispatcher is ExecutorCoroutineDispatcher) {
+            /**
+             * Explicitly close context (this is needed until #261 is fixed).
+             *
+             * [Kotlin Coroutines Issue #261](https://github.com/Kotlin/kotlinx.coroutines/issues/261)
+             * [Coroutines actor test Gist](https://gist.github.com/twyatt/c51f81d763a6ee39657233fa725f5435)
+             */
+            dispatcher.close()
+        }
+
         bluetoothGatt.close()
         Able.verbose { "close → End" }
     }
@@ -84,27 +88,10 @@ class CoroutinesGatt(
      * @throws [RemoteException] if underlying [BluetoothGatt.discoverServices] returns `false`.
      * @throws [GattClosed] if [Gatt] is closed while method is executing.
      */
-    override suspend fun discoverServices(): GattStatus {
-        Able.debug { "discoverServices → send(DiscoverServices)" }
-
-        val response = CompletableDeferred<Boolean>()
-        messenger.send(DiscoverServices(response))
-
-        val call = "BluetoothGatt.discoverServices()"
-        Able.verbose { "discoverServices → Waiting for $call" }
-        if (!response.await()) {
-            throw RemoteException("$call returned false.")
+    override suspend fun discoverServices(): GattStatus =
+        performBluetoothAction("discoverServices", callback.onServicesDiscovered) {
+            bluetoothGatt.discoverServices()
         }
-
-        Able.verbose { "discoverServices → Waiting for BluetoothGattCallback" }
-        return try {
-            messenger.callback.onServicesDiscovered.receive().also { status ->
-                Able.info { "discoverServices, status=${status.asGattStatusString()}" }
-            }
-        } catch (e: ClosedReceiveChannelException) {
-            throw GattClosed("Gatt closed during discoverServices", e)
-        }
-    }
 
     /**
      * @throws [RemoteException] if underlying [BluetoothGatt.readCharacteristic] returns `false`.
@@ -112,32 +99,10 @@ class CoroutinesGatt(
      */
     override suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
-    ): OnCharacteristicRead {
-        val uuid = characteristic.uuid
-        Able.debug { "readCharacteristic → send(ReadCharacteristic[uuid=$uuid])" }
-
-        val response = CompletableDeferred<Boolean>()
-        messenger.send(ReadCharacteristic(characteristic, response))
-
-        val call = "BluetoothGatt.readCharacteristic(BluetoothGattCharacteristic[uuid=$uuid])"
-        Able.verbose { "readCharacteristic → Waiting for $call" }
-        if (!response.await()) {
-            throw RemoteException("Failed to read characteristic with UUID $uuid.")
+    ): OnCharacteristicRead =
+        performBluetoothAction("readCharacteristic", callback.onCharacteristicRead) {
+            bluetoothGatt.readCharacteristic(characteristic)
         }
-
-        Able.verbose { "readCharacteristic → Waiting for BluetoothGattCallback" }
-        return try {
-            messenger.callback.onCharacteristicRead.receive().also { (_, value, status) ->
-                Able.info {
-                    val bytesString = value.size.bytesString
-                    val statusString = status.asGattStatusString()
-                    "← readCharacteristic $uuid ($bytesString), status=$statusString"
-                }
-            }
-        } catch (e: ClosedReceiveChannelException) {
-            throw GattClosed("Gatt closed during readCharacteristic[uuid=$uuid]", e)
-        }
-    }
 
     /**
      * @param value applied to [characteristic] when characteristic is written.
@@ -149,33 +114,12 @@ class CoroutinesGatt(
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray,
         writeType: WriteType
-    ): OnCharacteristicWrite {
-        val uuid = characteristic.uuid
-        Able.debug { "writeCharacteristic → send(WriteCharacteristic[uuid=$uuid])" }
-
-        val response = CompletableDeferred<Boolean>()
-        messenger.send(WriteCharacteristic(characteristic, value, writeType, response))
-
-        val call = "BluetoothGatt.writeCharacteristic(BluetoothGattCharacteristic[uuid=$uuid])"
-        Able.verbose { "writeCharacteristic → Waiting for $call" }
-        if (!response.await()) {
-            throw RemoteException("$call returned false.")
+    ): OnCharacteristicWrite =
+        performBluetoothAction("writeCharacteristic", callback.onCharacteristicWrite) {
+            characteristic.value = value
+            characteristic.writeType = writeType
+            bluetoothGatt.writeCharacteristic(characteristic)
         }
-
-        Able.verbose { "writeCharacteristic → Waiting for BluetoothGattCallback" }
-        return try {
-            messenger.callback.onCharacteristicWrite.receive().also { (_, status) ->
-                Able.info {
-                    val bytesString = value.size.bytesString
-                    val typeString = writeType.asWriteTypeString()
-                    val statusString = status.asGattStatusString()
-                    "→ writeCharacteristic $uuid ($bytesString), type=$typeString, status=$statusString"
-                }
-            }
-        } catch (e: ClosedReceiveChannelException) {
-            throw GattClosed("Gatt closed during writeCharacteristic[uuid=$uuid]", e)
-        }
-    }
 
     /**
      * @param value applied to [descriptor] when descriptor is written.
@@ -183,67 +127,54 @@ class CoroutinesGatt(
      * @throws [GattClosed] if [Gatt] is closed while method is executing.
      */
     override suspend fun writeDescriptor(
-        descriptor: BluetoothGattDescriptor, value: ByteArray
-    ): OnDescriptorWrite {
-        val uuid = descriptor.uuid
-        Able.debug { "writeDescriptor → send(WriteDescriptor[uuid=$uuid])" }
-
-        val response = CompletableDeferred<Boolean>()
-        messenger.send(WriteDescriptor(descriptor, value, response))
-
-        val call = "BluetoothGatt.writeDescriptor(BluetoothGattDescriptor[uuid=$uuid])"
-        Able.verbose { "writeDescriptor → Waiting for $call" }
-        if (!response.await()) {
-            throw RemoteException("$call returned false.")
+        descriptor: BluetoothGattDescriptor,
+        value: ByteArray
+    ): OnDescriptorWrite =
+        performBluetoothAction("writeDescriptor", callback.onDescriptorWrite) {
+            descriptor.value = value
+            bluetoothGatt.writeDescriptor(descriptor)
         }
-
-        Able.verbose { "writeDescriptor → Waiting for BluetoothGattCallback" }
-        return try {
-            messenger.callback.onDescriptorWrite.receive().also { (_, status) ->
-                Able.info {
-                    val bytesString = value.size.bytesString
-                    val statusString = status.asGattStatusString()
-                    "→ writeDescriptor $uuid ($bytesString), status=$statusString"
-                }
-            }
-        } catch (e: ClosedReceiveChannelException) {
-            throw GattClosed("Gatt closed during writeDescriptor[uuid=$uuid]", e)
-        }
-    }
 
     /**
      * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
      * @throws [GattClosed] if [Gatt] is closed while method is executing.
      */
-    override suspend fun requestMtu(mtu: Int): OnMtuChanged {
-        Able.debug { "requestMtu → send(RequestMtu[mtu=$mtu])" }
-
-        val response = CompletableDeferred<Boolean>()
-        messenger.send(RequestMtu(mtu, response))
-
-        val call = "BluetoothGatt.requestMtu($mtu)"
-        Able.verbose { "requestMtu → Waiting for $call" }
-        if (!response.await()) {
-            throw RemoteException("$call returned false.")
+    override suspend fun requestMtu(mtu: Int): OnMtuChanged =
+        performBluetoothAction("requestMtu", callback.onMtuChanged) {
+            bluetoothGatt.requestMtu(mtu)
         }
-
-        Able.verbose { "requestMtu → Waiting for BluetoothGattCallback" }
-        return try {
-            messenger.callback.onMtuChanged.receive().also { (mtu, status) ->
-                Able.info { "requestMtu $mtu, status=${status.asGattStatusString()}" }
-            }
-        } catch (e: ClosedReceiveChannelException) {
-            throw GattClosed("Gatt closed during requestMtu[mtu=$mtu]", e)
-        }
-    }
 
     override fun setCharacteristicNotification(
         characteristic: BluetoothGattCharacteristic,
         enable: Boolean
     ): Boolean {
-        Able.info { "setCharacteristicNotification ${characteristic.uuid} enable=$enable" }
+        Able.info { "setCharacteristicNotification → uuid=${characteristic.uuid}, enable=$enable" }
         return bluetoothGatt.setCharacteristicNotification(characteristic, enable)
     }
-}
 
-private val Int.bytesString get() = if (this == 1) "$this byte" else "$this bytes"
+    private suspend fun <T> performBluetoothAction(
+        methodName: String,
+        responseChannel: ReceiveChannel<T>,
+        action: () -> Boolean
+    ): T {
+        Able.debug { "$methodName → Acquiring Gatt lock" }
+        callback.waitForGattReady()
+
+        Able.verbose { "$methodName → withContext" }
+        withContext(dispatcher) {
+            if (!action.invoke()) {
+                throw RemoteException("BluetoothGatt.$methodName returned false.")
+            }
+        }
+
+        Able.verbose { "$methodName ← Waiting for BluetoothGattCallback" }
+        val response = try {
+            responseChannel.receive()
+        } catch (e: ClosedReceiveChannelException) {
+            throw GattClosed("Gatt closed during $methodName", e)
+        }
+
+        Able.info { "$methodName ← $response" }
+        return response
+    }
+}

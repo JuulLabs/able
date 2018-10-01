@@ -2,51 +2,22 @@
  * Copyright 2018 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental.messenger
+package com.juul.able.experimental
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import com.juul.able.experimental.GattState
-import com.juul.able.experimental.GattStatus
-import kotlinx.coroutines.CompletableDeferred
 import java.util.Arrays
-
-internal sealed class Message {
-
-    abstract val response: CompletableDeferred<Boolean>
-
-    internal data class DiscoverServices(
-        override val response: CompletableDeferred<Boolean>
-    ) : Message()
-
-    internal data class ReadCharacteristic(
-        val characteristic: BluetoothGattCharacteristic,
-        override val response: CompletableDeferred<Boolean>
-    ) : Message()
-
-    internal data class WriteCharacteristic(
-        val characteristic: BluetoothGattCharacteristic,
-        val value: ByteArray,
-        val writeType: Int,
-        override val response: CompletableDeferred<Boolean>
-    ) : Message()
-
-    internal data class RequestMtu(
-        val mtu: Int,
-        override val response: CompletableDeferred<Boolean>
-    ) : Message()
-
-    internal data class WriteDescriptor(
-        val descriptor: BluetoothGattDescriptor,
-        val value: ByteArray,
-        override val response: CompletableDeferred<Boolean>
-    ) : Message()
-}
 
 data class OnConnectionStateChange(
     val status: GattStatus,
     val newState: GattState
-)
+) {
+    override fun toString(): String {
+        val connectionStatus = status.asGattConnectionStatusString()
+        val gattState = newState.asGattStateString()
+        return "OnConnectionStateChange(status=$connectionStatus, newState=$gattState}"
+    }
+}
 
 data class OnCharacteristicRead(
     val characteristic: BluetoothGattCharacteristic,
@@ -72,12 +43,25 @@ data class OnCharacteristicRead(
         result = 31 * result + status
         return result
     }
+
+    override fun toString(): String {
+        val uuid = characteristic.uuid
+        val size = value.size
+        val gattStatus = status.asGattStatusString()
+        return "OnCharacteristicRead(uuid=$uuid, value=$value, value.size=$size, status=$gattStatus)"
+    }
 }
 
 data class OnCharacteristicWrite(
     val characteristic: BluetoothGattCharacteristic,
     val status: GattStatus
-)
+) {
+    override fun toString(): String {
+        val uuid = characteristic.uuid
+        val gattStatus = status.asGattStatusString()
+        return "OnCharacteristicWrite(uuid=$uuid, status=$gattStatus)"
+    }
+}
 
 data class OnCharacteristicChanged(
     val characteristic: BluetoothGattCharacteristic,
@@ -98,6 +82,12 @@ data class OnCharacteristicChanged(
         var result = characteristic.uuid.hashCode()
         result = 31 * result + Arrays.hashCode(value)
         return result
+    }
+
+    override fun toString(): String {
+        val uuid = characteristic.uuid
+        val size = value.size
+        return "OnCharacteristicChanged(uuid=$uuid, value=$value, value.size=$size)"
     }
 }
 
@@ -125,13 +115,32 @@ data class OnDescriptorRead(
         result = 31 * result + status
         return result
     }
+
+    override fun toString(): String {
+        val uuid = descriptor.uuid
+        val size = value.size
+        val gattStatus = status.asGattStatusString()
+        return "OnDescriptorRead(uuid=$uuid, value=$value, value.size=$size, status=$gattStatus)"
+    }
 }
 
 data class OnDescriptorWrite(
     val descriptor: BluetoothGattDescriptor,
     val status: GattStatus
-)
+) {
+    override fun toString(): String {
+        val uuid = descriptor.uuid
+        val gattStatus = status.asGattStatusString()
+        return "OnDescriptorWrite(uuid=$uuid, status=$gattStatus)"
+    }
+}
 
-data class OnReliableWriteCompleted(val status: GattStatus)
+data class OnReliableWriteCompleted(val status: GattStatus) {
+    override fun toString(): String =
+        "OnReliableWriteCompleted(status=${status.asGattStatusString()})"
+}
 
-data class OnMtuChanged(val mtu: Int, val status: GattStatus)
+data class OnMtuChanged(val mtu: Int, val status: GattStatus) {
+    override fun toString(): String =
+        "OnMtuChanged(mtu=$mtu, status=${status.asGattStatusString()})"
+}
