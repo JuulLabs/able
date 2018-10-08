@@ -2,6 +2,8 @@
  * Copyright 2018 JUUL Labs, Inc.
  */
 
+@file:JvmName("BluetoothDeviceCoreKt")
+
 package com.juul.able.experimental.android
 
 import android.bluetooth.BluetoothDevice
