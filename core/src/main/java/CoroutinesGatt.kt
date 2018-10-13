@@ -26,13 +26,18 @@ import com.juul.able.experimental.messenger.OnConnectionStateChange
 import com.juul.able.experimental.messenger.OnDescriptorWrite
 import com.juul.able.experimental.messenger.OnMtuChanged
 import kotlinx.coroutines.experimental.CompletableDeferred
+import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.channels.BroadcastChannel
 import java.util.UUID
+import kotlin.coroutines.experimental.CoroutineContext
 
 class CoroutinesGatt(
     private val bluetoothGatt: BluetoothGatt,
     private val messenger: Messenger
 ) : Gatt {
+
+    private val job = Job()
+    override val coroutineContext: CoroutineContext = job
 
     private val connectionStateMonitor by lazy { ConnectionStateMonitor(this) }
 
@@ -61,6 +66,7 @@ class CoroutinesGatt(
 
     override fun close() {
         Able.verbose { "close → Begin" }
+        job.cancel()
         connectionStateMonitor.close()
         messenger.close()
         bluetoothGatt.close()
