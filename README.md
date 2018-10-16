@@ -264,7 +264,7 @@ See the [Recipes] page for more usage examples.
 
 ## Gradle
 
-[![JitPack version](https://jitpack.io/v/JuulLabs/able.svg)](https://jitpack.io/#JuulLabs/able)
+[![JitPack version](https://jitpack.io/v/JUUL-OSS/able.svg)](https://jitpack.io/#JUUL-OSS/able)
 
 To use **Able** in your Android project, setup your `build.gradle` as follows:
 
