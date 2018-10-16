@@ -37,7 +37,8 @@ class CoroutinesGatt(
 ) : Gatt {
 
     private val job = Job()
-    override val coroutineContext: CoroutineContext = job
+    override val coroutineContext: CoroutineContext
+        get() = job
 
     private val connectionStateMonitor by lazy { ConnectionStateMonitor(this) }
 
