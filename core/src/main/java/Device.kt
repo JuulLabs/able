@@ -8,10 +8,20 @@ import android.content.Context
 import com.juul.able.experimental.ConnectGattResult.Success
 import kotlinx.coroutines.experimental.CancellationException
 
+interface ConnectGattError {
+    val cause: Throwable
+}
+
 sealed class ConnectGattResult {
     data class Success(val gatt: Gatt) : ConnectGattResult()
-    data class Canceled(val cause: CancellationException) : ConnectGattResult()
-    data class Failure(val cause: Throwable) : ConnectGattResult()
+
+    data class Canceled(
+        override val cause: CancellationException
+    ) : ConnectGattResult(), ConnectGattError
+
+    data class Failure(
+        override val cause: Throwable
+    ) : ConnectGattResult(), ConnectGattError
 }
 
 interface Device {
