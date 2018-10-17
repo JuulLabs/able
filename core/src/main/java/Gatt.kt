@@ -18,6 +18,7 @@ import com.juul.able.experimental.messenger.OnCharacteristicWrite
 import com.juul.able.experimental.messenger.OnConnectionStateChange
 import com.juul.able.experimental.messenger.OnDescriptorWrite
 import com.juul.able.experimental.messenger.OnMtuChanged
+import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.channels.BroadcastChannel
 import java.io.Closeable
 import java.util.UUID
@@ -57,7 +58,7 @@ typealias GattState = Int
  */
 typealias WriteType = Int
 
-interface Gatt : Closeable {
+interface Gatt : Closeable, CoroutineScope {
 
     val onConnectionStateChange: BroadcastChannel<OnConnectionStateChange>
     val onCharacteristicChanged: BroadcastChannel<OnCharacteristicChanged>
