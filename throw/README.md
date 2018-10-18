@@ -22,7 +22,7 @@ fun connect(context: Context, device: BluetoothDevice) = launch {
 
 ## Gradle
 
-[![JitPack version](https://jitpack.io/v/JuulLabs/able.svg)](https://jitpack.io/#JuulLabs/able)
+[![JitPack version](https://jitpack.io/v/JUUL-OSS/able.svg)](https://jitpack.io/#JUUL-OSS/able)
 
 ```groovy
 repositories {
@@ -30,6 +30,6 @@ repositories {
 }
 
 dependencies {
-    implementation "com.github.JuulLabs.able:throw:$version"
+    implementation "com.github.JUUL-OSS.able:throw:$version"
 }
 ```

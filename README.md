@@ -189,7 +189,7 @@ repositories {
 }
 
 dependencies {
-    implementation "com.github.JuulLabs.able:core:$version"
+    implementation "com.github.JUUL-OSS.able:core:$version"
 }
 ```
 
