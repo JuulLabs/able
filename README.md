@@ -137,15 +137,15 @@ corresponding [`BluetoothGatt`] will be closed:
 
 ```kotlin
 fun connect(context: Context, device: BluetoothDevice) {
-	val deferred = async {
-		device.connectGatt(context, autoConnect = false)
-	}
+    val deferred = async {
+        device.connectGatt(context, autoConnect = false)
+    }
 
     launch {
-    	delay(1000L) // Assume, for this example, that BLE connection takes more than 1 second.
+        delay(1000L) // Assume, for this example, that BLE connection takes more than 1 second.
 
         // Cancels the `async` Coroutine and automatically closes the underlying `BluetoothGatt`.
-	    deferred.cancel()    	
+        deferred.cancel()
     }
 
     val result = deferred.await() // `result` will be `ConnectGattResult.Canceled`.
@@ -164,12 +164,12 @@ automatically cancel when the `Gatt` is closed (_error handling omitted for simp
 
 ```kotlin
 fun continuallyReadCharacteristic(gatt: Gatt, serviceUuid: UUID, characteristicUuid: UUID) {
-	val characteristic = gatt.getService(serviceUuid)!!.getCharacteristic(characteristicUuid)!!
+    val characteristic = gatt.getService(serviceUuid)!!.getCharacteristic(characteristicUuid)!!
 
-	// This Coroutine will automatically cancel when `gatt.close()` is called.
-	gatt.launch {
+    // This Coroutine will automatically cancel when `gatt.close()` is called.
+    gatt.launch {
         while (isActive) {
-        	println("value = ${gatt.readCharacteristic(characteristic).value}")
+            println("value = ${gatt.readCharacteristic(characteristic).value}")
         }
     }
 }
@@ -189,7 +189,7 @@ repositories {
 }
 
 dependencies {
-    implementation "com.github.JuulLabs.able:core:$version"
+    implementation "com.github.JUUL-OSS.able:core:$version"
 }
 ```
 

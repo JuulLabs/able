@@ -18,6 +18,6 @@ repositories {
 }
 
 dependencies {
-    implementation "com.github.JuulLabs.able:timber-logger:$version"
+    implementation "com.github.JUUL-OSS.able:timber-logger:$version"
 }
 ```
