@@ -193,6 +193,18 @@ dependencies {
 }
 ```
 
+## Packages
+
+**Able** provides a number of packages to help extend it's functionality:
+
+| Package           | Functionality                                                                                               |
+|-------------------|-------------------------------------------------------------------------------------------------------------|
+| [`processor`]     | A `Processor` adds the ability to process (and optionally modify) GATT data pre-write or post-read.         |
+| [`retry`]         | `Retry` wraps a `Gatt` to add I/O retry functionality and on-demand connection establishment.               |
+| [`throw`]         | Adds extension functions that `throw` exceptions on failures for various BLE operations.                    |
+| [`timber-logger`] | Routes **Able** logging through [Timber](https://github.com/JakeWharton/timber).                            |
+| [`device`]        | Provides `BluetoothDevice` extension functions as a single access point for connectivity and communication. |
+
 # License
 
 ```
@@ -223,3 +235,8 @@ limitations under the License.
 [bluetooth permissions]: https://developer.android.com/guide/topics/connectivity/bluetooth#Permissions
 [structured concurrency]: https://medium.com/@elizarov/structured-concurrency-722d765aa952
 [`CoroutineScope`]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.experimental/-coroutine-scope/
+[`processor`]: processor
+[`retry`]: retry
+[`throw`]: throw
+[`timber-logger`]: timber-logger
+[`device`]: device
