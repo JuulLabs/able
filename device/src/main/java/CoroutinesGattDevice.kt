@@ -90,10 +90,8 @@ class CoroutinesGattDevice internal constructor(
      *
      * @see createConnection
      */
-    private val eventCoroutineScope = object : CoroutineScope {
-        override val coroutineContext: CoroutineContext
-            get() = eventJob
-    }
+    private val eventCoroutineScope
+        get() = CoroutineScope(eventJob)
 
     override val onConnectionStateChange = BroadcastChannel<OnConnectionStateChange>(CONFLATED)
     override val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(1)
