@@ -197,13 +197,13 @@ dependencies {
 
 **Able** provides a number of packages to help extend it's functionality:
 
-| Package           | Functionality                                                                                               |
-|-------------------|-------------------------------------------------------------------------------------------------------------|
-| [`processor`]     | A `Processor` adds the ability to process (and optionally modify) GATT data pre-write or post-read.         |
-| [`retry`]         | `Retry` wraps a `Gatt` to add I/O retry functionality and on-demand connection establishment.               |
-| [`throw`]         | Adds extension functions that `throw` exceptions on failures for various BLE operations.                    |
-| [`timber-logger`] | Routes **Able** logging through [Timber](https://github.com/JakeWharton/timber).                            |
-| [`device`]        | Provides `BluetoothDevice` extension functions as a single access point for connectivity and communication. |
+| Package           | Functionality                                                                                                   |
+|-------------------|-----------------------------------------------------------------------------------------------------------------|
+| [`processor`]     | A `Processor` adds the ability to process (and optionally modify) GATT data<br/>pre-write or post-read.         |
+| [`retry`]         | `Retry` wraps a `Gatt` to add I/O retry functionality and on-demand connection<br/>establishment.               |
+| [`throw`]         | Adds extension functions that `throw` exceptions on failures for various BLE<br/>operations.                    |
+| [`timber-logger`] | Routes **Able** logging through [Timber](https://github.com/JakeWharton/timber).                                |
+| [`device`]        | Provides `BluetoothDevice` extension functions as a single access point for<br/>connectivity and communication. |
 
 # License
 
