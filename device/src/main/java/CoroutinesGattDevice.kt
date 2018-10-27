@@ -40,7 +40,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.experimental.CoroutineContext
 
-class GattUnavailable : IllegalStateException()
+class GattUnavailable(message: String) : IllegalStateException(message)
 
 class CoroutinesGattDevice internal constructor(
     private val bluetoothDevice: BluetoothDevice
@@ -70,7 +70,8 @@ class CoroutinesGattDevice internal constructor(
 
     private var _gatt: Gatt? = null
     private val gatt: Gatt
-        get() = _gatt ?: throw GattUnavailable()
+        get() = _gatt
+            ?: throw GattUnavailable("Gatt unavailable for bluetooth device $bluetoothDevice")
 
     private val _connectionState = AtomicInteger()
     fun getConnectionState(): GattState = _connectionState.get()
