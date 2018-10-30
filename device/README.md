@@ -68,7 +68,7 @@ When a [`BluetoothDevice`] is no longer needed, it should be disposed from the u
 `ConcurrentMap`:
 
 ```kotlin
-// Close underlying `BluetoothGatt` and close connection state and characteristic change `Channel`s.
+// Close underlying BluetoothGatt as well as connection state and characteristic change Channels.
 CoroutinesGattDevices -= bluetoothDevice
 ```
 
