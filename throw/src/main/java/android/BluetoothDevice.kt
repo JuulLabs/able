@@ -13,7 +13,7 @@ import com.juul.able.experimental.messenger.GattCallbackConfig
 import com.juul.able.experimental.throwable.connectGattOrThrow
 import com.juul.able.experimental.throwable.ConnectionCanceledException
 import com.juul.able.experimental.throwable.ConnectionFailedException
-import kotlinx.coroutines.experimental.CancellationException
+import kotlinx.coroutines.CancellationException
 
 /**
  * @throws ConnectionCanceledException if a [CancellationException] occurs during the connection process.

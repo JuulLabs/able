@@ -16,9 +16,9 @@ import com.juul.able.experimental.GattState
 import com.juul.able.experimental.GattStatus
 import com.juul.able.experimental.asGattConnectionStatusString
 import com.juul.able.experimental.asGattStateString
-import kotlinx.coroutines.experimental.channels.BroadcastChannel
-import kotlinx.coroutines.experimental.channels.Channel
-import kotlinx.coroutines.experimental.sync.Mutex
+import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.sync.Mutex
 
 data class GattCallbackConfig(
     val onCharacteristicChangedCapacity: Int = Channel.CONFLATED,

@@ -11,10 +11,10 @@ import com.juul.able.experimental.messenger.Message.ReadCharacteristic
 import com.juul.able.experimental.messenger.Message.RequestMtu
 import com.juul.able.experimental.messenger.Message.WriteCharacteristic
 import com.juul.able.experimental.messenger.Message.WriteDescriptor
-import kotlinx.coroutines.experimental.GlobalScope
-import kotlinx.coroutines.experimental.channels.actor
-import kotlinx.coroutines.experimental.channels.consumeEach
-import kotlinx.coroutines.experimental.newSingleThreadContext
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.newSingleThreadContext
 
 class Messenger internal constructor(
     private val bluetoothGatt: BluetoothGatt,

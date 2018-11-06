@@ -8,7 +8,7 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import com.juul.able.experimental.GattState
 import com.juul.able.experimental.GattStatus
-import kotlinx.coroutines.experimental.CompletableDeferred
+import kotlinx.coroutines.CompletableDeferred
 import java.util.Arrays
 
 internal sealed class Message {

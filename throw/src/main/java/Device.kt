@@ -10,7 +10,7 @@ import android.content.Context
 import com.juul.able.experimental.ConnectGattResult
 import com.juul.able.experimental.Device
 import com.juul.able.experimental.Gatt
-import kotlinx.coroutines.experimental.CancellationException
+import kotlinx.coroutines.CancellationException
 
 class ConnectionCanceledException(cause: CancellationException) : Exception(cause)
 class ConnectionFailedException(cause: Throwable) : Exception(cause)
