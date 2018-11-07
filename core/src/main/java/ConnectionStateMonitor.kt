@@ -9,10 +9,10 @@ package com.juul.able.experimental
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothProfile
 import com.juul.able.experimental.messenger.OnConnectionStateChange
-import kotlinx.coroutines.experimental.channels.ReceiveChannel
-import kotlinx.coroutines.experimental.channels.consumeEach
-import kotlinx.coroutines.experimental.sync.Mutex
-import kotlinx.coroutines.experimental.sync.withLock
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.Closeable
 
 class ConnectionStateMonitor(private val gatt: Gatt) : Closeable {

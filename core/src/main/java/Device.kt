@@ -6,7 +6,7 @@ package com.juul.able.experimental
 
 import android.content.Context
 import com.juul.able.experimental.ConnectGattResult.Success
-import kotlinx.coroutines.experimental.CancellationException
+import kotlinx.coroutines.CancellationException
 
 interface ConnectGattError {
     val cause: Throwable

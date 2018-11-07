@@ -15,7 +15,7 @@ import com.juul.able.experimental.ConnectGattResult.Success
 import com.juul.able.experimental.messenger.GattCallback
 import com.juul.able.experimental.messenger.GattCallbackConfig
 import com.juul.able.experimental.messenger.Messenger
-import kotlinx.coroutines.experimental.CancellationException
+import kotlinx.coroutines.CancellationException
 
 class CoroutinesDevice(
     private val device: BluetoothDevice,

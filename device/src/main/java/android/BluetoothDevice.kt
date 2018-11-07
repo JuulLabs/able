@@ -22,7 +22,7 @@ import com.juul.able.experimental.messenger.OnCharacteristicRead
 import com.juul.able.experimental.messenger.OnConnectionStateChange
 import com.juul.able.experimental.messenger.OnDescriptorWrite
 import com.juul.able.experimental.messenger.OnMtuChanged
-import kotlinx.coroutines.experimental.channels.BroadcastChannel
+import kotlinx.coroutines.channels.BroadcastChannel
 import java.util.UUID
 
 private val BluetoothDevice.coroutinesGattDevice

@@ -17,11 +17,11 @@ import com.juul.able.experimental.WriteType
 import com.juul.able.experimental.messenger.OnCharacteristicRead
 import com.juul.able.experimental.messenger.OnCharacteristicWrite
 import com.juul.able.experimental.messenger.OnDescriptorWrite
-import kotlinx.coroutines.experimental.TimeoutCancellationException
-import kotlinx.coroutines.experimental.channels.consumeEach
-import kotlinx.coroutines.experimental.sync.Mutex
-import kotlinx.coroutines.experimental.sync.withLock
-import kotlinx.coroutines.experimental.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 

@@ -12,8 +12,8 @@ import com.juul.able.experimental.messenger.GattCallback
 import com.juul.able.experimental.messenger.GattCallbackConfig
 import com.juul.able.experimental.messenger.Messenger
 import com.nhaarman.mockitokotlin2.mock
-import kotlinx.coroutines.experimental.channels.consumeEach
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.runBlocking
 import org.junit.BeforeClass
 import org.junit.Test
 import java.nio.ByteBuffer
