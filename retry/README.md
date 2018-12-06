@@ -12,7 +12,7 @@ val gatt = device
 
 ## Gradle
 
-[![JitPack version](https://jitpack.io/v/JUUL-OSS/able.svg)](https://jitpack.io/#JUUL-OSS/able)
+[![JitPack version](https://jitpack.io/v/JuulLabs-OSS/able.svg)](https://jitpack.io/#JuulLabs-OSS/able)
 
 ```groovy
 repositories {
@@ -20,6 +20,6 @@ repositories {
 }
 
 dependencies {
-    implementation "com.github.JUUL-OSS.able:retry:$version"
+    implementation "com.github.juullabs-oss.able:retry:$version"
 }
 ```

@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'com.github.dcendents.android-maven'
 
-group 'com.github.JUUL-OSS.able'
+group 'com.github.juullabs-oss.able'
 
 android {
     compileSdkVersion versions.compileSdk
