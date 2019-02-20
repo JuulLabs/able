@@ -1,8 +1,5 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'com.github.dcendents.android-maven'
-
-group 'com.github.JUUL-OSS.able'
 
 kotlin.experimental.coroutines 'enable'
 
@@ -26,3 +23,5 @@ artifacts {
 dependencies {
     api project(':core')
 }
+
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

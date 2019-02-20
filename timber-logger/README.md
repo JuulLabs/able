@@ -10,14 +10,10 @@ Able.logger = TimberLogger()
 
 ## Gradle
 
-[![JitPack version](https://jitpack.io/v/JUUL-OSS/able.svg)](https://jitpack.io/#JUUL-OSS/able)
+![Maven Central](https://img.shields.io/maven-central/v/com.juul.able/core.svg?label=version)
 
 ```groovy
-repositories {
-    maven { url "https://jitpack.io" }
-}
-
 dependencies {
-    implementation "com.github.JUUL-OSS.able:timber-logger:$version"
+    implementation "com.juul.able:timber-logger:$version"
 }
 ```
