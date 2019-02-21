@@ -8,9 +8,6 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import android.bluetooth.BluetoothProfile.STATE_CONNECTED
-import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
-import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
 import com.juul.able.experimental.Able
 import com.juul.able.experimental.GattState
 import com.juul.able.experimental.GattStatus
@@ -61,7 +58,7 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         Channel<OnReliableWriteCompleted>(config.onReliableWriteCompletedCapacity)
     internal val onMtuChanged = Channel<OnMtuChanged>(config.onMtuChangedCapacity)
 
-    private val gattLock = Mutex(locked = true) // Start locked then unlock upon STATE_CONNECTED.
+    private val gattLock = Mutex()
     internal suspend fun waitForGattReady() = gattLock.lock()
     internal fun notifyGattReady() {
         if (gattLock.isLocked) {
@@ -98,11 +95,6 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
 
         if (!onConnectionStateChange.offer(OnConnectionStateChange(status, newState))) {
             Able.warn { "onConnectionStateChange → dropped" }
-        }
-
-        when (newState) {
-            STATE_DISCONNECTING, STATE_DISCONNECTED -> gattLock.tryLock()
-            STATE_CONNECTED -> notifyGattReady()
         }
     }
 
