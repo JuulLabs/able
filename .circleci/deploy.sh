@@ -5,7 +5,7 @@
 # Adapted from https://raw.githubusercontent.com/JakeWharton/retrofit2-kotlinx-serialization-converter/670dc5002a61726afe8feaef982c92f451495bee/.buildscript/deploy_snapshot.sh
 
 REPOSITORY_URL="git@github.com:JuulLabs-OSS/able.git"
-BRANCH="master"
+BRANCH="develop"
 
 set -e
 
