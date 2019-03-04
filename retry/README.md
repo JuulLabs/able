@@ -12,7 +12,7 @@ val gatt = device
 
 ## Gradle
 
-![Maven Central](https://img.shields.io/maven-central/v/com.juul.able/core.svg?label=version)
+![Maven Central](https://img.shields.io/maven-central/v/com.juul.able/retry.svg?label=version)
 
 ```groovy
 dependencies {
