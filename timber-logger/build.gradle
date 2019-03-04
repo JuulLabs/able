@@ -1,8 +1,5 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'com.github.dcendents.android-maven'
-
-group 'com.github.JUUL-OSS.able'
 
 android {
     compileSdkVersion versions.compileSdk
@@ -21,12 +18,10 @@ artifacts {
     archives sourcesJar
 }
 
-repositories {
-    maven { url "https://jitpack.io" }
-}
-
 dependencies {
     api project(':core')
     implementation "com.jakewharton.timber:timber:4.7.1"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:${versions.kotlinTestJunit}"
 }
+
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

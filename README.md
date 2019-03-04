@@ -181,17 +181,13 @@ fun continuallyReadCharacteristic(gatt: Gatt, serviceUuid: UUID, characteristicU
 
 ## Gradle
 
-[![JitPack version](https://jitpack.io/v/JUUL-OSS/able.svg)](https://jitpack.io/#JUUL-OSS/able)
-
 To use **Able** in your Android project, setup your `build.gradle` as follows:
 
-```groovy
-repositories {
-    maven { url "https://jitpack.io" }
-}
+![Maven Central](https://img.shields.io/maven-central/v/com.juul.able/core.svg?label=version)
 
+```groovy
 dependencies {
-    implementation "com.github.JUUL-OSS.able:core:$version"
+    implementation "com.juul.able:core:$version"
 }
 ```
 

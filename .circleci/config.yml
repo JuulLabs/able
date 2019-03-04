@@ -19,6 +19,9 @@ jobs:
                      --no-daemon
                      --stacktrace
                      assemble check
+      - run:
+          name: Deploy
+          command: .circleci/deploy.sh
       - save_cache:
           paths:
             - ~/.gradle
