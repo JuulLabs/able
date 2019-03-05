@@ -76,11 +76,9 @@ CoroutinesGattDevices -= bluetoothDevice
 
 ## Gradle
 
-![Maven Central](https://img.shields.io/maven-central/v/com.juul.able/device.svg?label=version)
-
 ```groovy
 dependencies {
-    implementation "com.juul.able:device:$version"
+    implementation "com.juul.able:device:0.7.0"
 }
 ```
 
