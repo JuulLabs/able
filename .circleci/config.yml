@@ -20,6 +20,9 @@ jobs:
                      --stacktrace
                      assemble check
       - run:
+          name: Keyring
+          command: mkdir -p ~/.gnupg && echo "$SIGNING_SECRET_KEY_RING" | base64 --decode > ~/.gnupg/secring.gpg
+      - run:
           name: Deploy
           command: .circleci/deploy.sh
       - save_cache:

@@ -17,6 +17,9 @@ elif [ "$CIRCLE_BRANCH" != "$BRANCH" ]; then
     echo "Skipping snapshot deployment: wrong branch. Expected '$BRANCH' but was '$CIRCLE_BRANCH'."
 else
     echo "Deploying snapshot..."
-    ./gradlew uploadArchives
+    ./gradlew uploadArchives \
+        -Psigning.keyId="$SIGNING_KEY_ID" \
+        -Psigning.password="$SIGNING_PASSWORD" \
+        -Psigning.secretKeyRingFile="$HOME/.gnupg/secring.gpg"
     echo "Snapshot deployed!"
 fi
