@@ -12,10 +12,8 @@ val gatt = device
 
 ## Gradle
 
-![Maven Central](https://img.shields.io/maven-central/v/com.juul.able/retry.svg?label=version)
-
 ```groovy
 dependencies {
-    implementation "com.juul.able:retry:$version"
+    implementation "com.juul.able:retry:0.7.0"
 }
 ```

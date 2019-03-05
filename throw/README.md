@@ -22,10 +22,8 @@ fun connect(context: Context, device: BluetoothDevice) = launch {
 
 ## Gradle
 
-![Maven Central](https://img.shields.io/maven-central/v/com.juul.able/throw.svg?label=version)
-
 ```groovy
 dependencies {
-    implementation "com.juul.able:throw:$version"
+    implementation "com.juul.able:throw:0.7.0"
 }
 ```

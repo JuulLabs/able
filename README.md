@@ -183,11 +183,9 @@ fun continuallyReadCharacteristic(gatt: Gatt, serviceUuid: UUID, characteristicU
 
 To use **Able** in your Android project, setup your `build.gradle` as follows:
 
-![Maven Central](https://img.shields.io/maven-central/v/com.juul.able/core.svg?label=version)
-
 ```groovy
 dependencies {
-    implementation "com.juul.able:core:$version"
+    implementation "com.juul.able:core:0.7.0"
 }
 ```
 
