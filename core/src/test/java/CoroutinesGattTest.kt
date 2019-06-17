@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
+import android.os.RemoteException
 import com.juul.able.experimental.messenger.GattCallback
 import com.juul.able.experimental.messenger.GattCallbackConfig
 import com.juul.able.experimental.messenger.Messenger
@@ -15,11 +16,13 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.BeforeClass
 import org.junit.Test
 import java.nio.ByteBuffer
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class CoroutinesGattTest {
 
@@ -72,6 +75,35 @@ class CoroutinesGattTest {
             assertEquals(numberOfFakeCharacteristicNotifications, i)
 
             binderThreads.stop()
+        }
+    }
+
+    @Test
+    fun readCharacteristic_bluetoothGattReturnsFalse_doesNotDeadlock() {
+        val bluetoothGatt = mockk<BluetoothGatt> {
+            every { readCharacteristic(any()) } returns false
+        }
+        val callback = GattCallback(GattCallbackConfig()).apply {
+            onConnectionStateChange(bluetoothGatt, GATT_SUCCESS, STATE_CONNECTED)
+        }
+        val messenger = Messenger(bluetoothGatt, callback)
+        val gatt = CoroutinesGatt(bluetoothGatt, messenger)
+
+        assertFailsWith(RemoteException::class, "First invocation") {
+            runBlocking {
+                withTimeout(5_000L) {
+                    gatt.readCharacteristic(mockCharacteristic())
+                }
+            }
+        }
+
+        // Perform another read to verify that the previous failure did not deadlock `Messenger`.
+        assertFailsWith(RemoteException::class, "Second invocation") {
+            runBlocking {
+                withTimeout(5_000L) {
+                    gatt.readCharacteristic(mockCharacteristic())
+                }
+            }
         }
     }
 }
