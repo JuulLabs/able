@@ -1,5 +1,9 @@
 # Change Log
 
+## Version 0.7.1
+
+- Release Gatt lock on Android BLE method failure (fixes #34) (#35)
+
 ## Version 0.7.0
 
 - `GattConnectionLost` exception is thrown when a connection is lost during an I/O operation (#27)

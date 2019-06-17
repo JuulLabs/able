@@ -36,6 +36,6 @@ val gatt = device
 
 ```groovy
 dependencies {
-    implementation "com.juul.able:processor:0.7.0"
+    implementation "com.juul.able:processor:0.7.1"
 }
 ```

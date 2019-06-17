@@ -14,6 +14,6 @@ val gatt = device
 
 ```groovy
 dependencies {
-    implementation "com.juul.able:retry:0.7.0"
+    implementation "com.juul.able:retry:0.7.1"
 }
 ```

@@ -24,6 +24,6 @@ fun connect(context: Context, device: BluetoothDevice) = launch {
 
 ```groovy
 dependencies {
-    implementation "com.juul.able:throw:0.7.0"
+    implementation "com.juul.able:throw:0.7.1"
 }
 ```
