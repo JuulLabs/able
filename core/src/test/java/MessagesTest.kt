@@ -9,8 +9,8 @@ import android.bluetooth.BluetoothGattDescriptor
 import com.juul.able.experimental.messenger.OnCharacteristicChanged
 import com.juul.able.experimental.messenger.OnCharacteristicRead
 import com.juul.able.experimental.messenger.OnDescriptorRead
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
+import io.mockk.every
+import io.mockk.mockk
 import nl.jqno.equalsverifier.EqualsVerifier
 import org.junit.Test
 import java.util.UUID
@@ -40,15 +40,15 @@ class MessagesTest {
 
 private fun mockDescriptor(uuidString: String): BluetoothGattDescriptor {
     val uuid = UUID.fromString(uuidString)
-    return mock {
-        whenever(it.uuid).thenReturn(uuid)
+    return mockk {
+        every { getUuid() } returns uuid
     }
 }
 
 private fun mockCharacteristic(uuidString: String): BluetoothGattCharacteristic {
     val uuid = UUID.fromString(uuidString)
-    return mock {
-        whenever(it.uuid).thenReturn(uuid)
+    return mockk {
+        every { getUuid() } returns uuid
     }
 }
 

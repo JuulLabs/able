@@ -26,8 +26,8 @@ dependencies {
 
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:${versions.kotlinTestJunit}"
 
-    // [Mockito-Kotlin](https://github.com/nhaarman/mockito-kotlin)
-    testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:${versions.mockitoKotlin}"
+    // [MockK](https://github.com/mockk/mockk)
+    testImplementation "io.mockk:mockk:${versions.mockK}"
 
     // [EqualsVerifier](https://github.com/jqno/equalsverifier)
     testImplementation "nl.jqno.equalsverifier:equalsverifier:${versions.equalsVerifier}"

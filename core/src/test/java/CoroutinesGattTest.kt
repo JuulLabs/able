@@ -11,7 +11,8 @@ import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import com.juul.able.experimental.messenger.GattCallback
 import com.juul.able.experimental.messenger.GattCallbackConfig
 import com.juul.able.experimental.messenger.Messenger
-import com.nhaarman.mockitokotlin2.mock
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.runBlocking
 import org.junit.BeforeClass
@@ -40,7 +41,7 @@ class CoroutinesGattTest {
         val numberOfFakeBinderThreads = 10
         val onCharacteristicChangedCapacity = numberOfFakeCharacteristicNotifications.toInt()
 
-        val bluetoothGatt = mock<BluetoothGatt>()
+        val bluetoothGatt = mockk<BluetoothGatt>()
         val callback = GattCallback(GattCallbackConfig(onCharacteristicChangedCapacity)).apply {
             onConnectionStateChange(bluetoothGatt, GATT_SUCCESS, STATE_CONNECTED)
         }
@@ -78,9 +79,9 @@ class CoroutinesGattTest {
 private fun mockCharacteristic(
     uuid: UUID = UUID.randomUUID(),
     data: ByteArray? = null
-): BluetoothGattCharacteristic = mock {
-    on { getUuid() }.thenReturn(uuid)
-    on { value }.thenReturn(data)
+): BluetoothGattCharacteristic = mockk {
+    every { getUuid() } returns uuid
+    every { value } returns data
 }
 
 private fun Long.asByteArray(): ByteArray = ByteBuffer.allocate(8).putLong(this).array()
