@@ -45,8 +45,13 @@ class Messenger internal constructor(
                     bluetoothGatt.writeDescriptor(message.descriptor)
                 }
             }
+
             Able.debug { "Processed ${message.javaClass.simpleName}, result=$result" }
             message.response.complete(result)
+
+            if (!result) {
+                callback.notifyGattReady()
+            }
         }
         Able.verbose { "End" }
     }
