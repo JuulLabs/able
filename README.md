@@ -185,7 +185,7 @@ To use **Able** in your Android project, setup your `build.gradle` as follows:
 
 ```groovy
 dependencies {
-    implementation "com.juul.able:core:0.7.1"
+    implementation "com.juul.able:core:0.8.0"
 }
 ```
 

@@ -12,6 +12,6 @@ Able.logger = TimberLogger()
 
 ```groovy
 dependencies {
-    implementation "com.juul.able:timber-logger:0.7.1"
+    implementation "com.juul.able:timber-logger:0.8.0"
 }
 ```

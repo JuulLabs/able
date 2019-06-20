@@ -78,7 +78,7 @@ CoroutinesGattDevices -= bluetoothDevice
 
 ```groovy
 dependencies {
-    implementation "com.juul.able:device:0.7.1"
+    implementation "com.juul.able:device:0.8.0"
 }
 ```
 
