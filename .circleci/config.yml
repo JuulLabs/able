@@ -18,7 +18,7 @@ jobs:
                      --max-workers 2
                      --no-daemon
                      --stacktrace
-                     assemble check
+                     assemble check jacocoTestReport
       - run:
           name: Keyring
           command: mkdir -p ~/.gnupg && echo "$SIGNING_SECRET_KEY_RING" | base64 --decode > ~/.gnupg/secring.gpg
@@ -51,18 +51,34 @@ jobs:
 
       # Save test reports for all modules to single directory. This will recursively copy the test
       # results directories that contain the `index.html` (and supporting assets, such as CSS files)
-      # to a subdirectory of `./reports/` (named according to the module name, e.g. `./reports/app/`
-      # for `app` module).
+      # to a subdirectory of `./reports/tests/` (named according to the module name, e.g.
+      # `./reports/tests/app/` for `app` module).
       - run:
           name: Save Test Reports
           command: |
             for i in $(find . -type d | grep -E -o '.*\/build\/reports\/tests\/[^/.]*$');
             do
                 module=$(echo "$i" | sed -E 's/\.\/([^/.]*)\/build\/reports\/tests\/[^/.]*/\1/')
-                destination="./reports/$module/"
+                destination="./reports/tests/$module/"
                 mkdir -p "$destination"
                 cp -Rv "$i" "$destination"
             done
+
+      # Save jacoco reports for all modules to single directory. This will recursively copy the test
+      # results directories that contain the `index.html` (and supporting assets, such as CSS files)
+      # to a subdirectory of `./reports/jacoco/` (named according to the module name, e.g.
+      # `./reports/jacoco/app/` for `app` module).
+      - run:
+          name: Save JaCoCo Reports
+          command: |
+            for i in $(find . -type d | grep -E -o '.*\/build\/reports\/jacoco\/[^/.]*$');
+            do
+                module=$(echo "$i" | sed -E 's/\.\/([^/.]*)\/build\/reports\/jacoco\/[^/.]*/\1/')
+                destination="./reports/jacoco/$module/"
+                mkdir -p "$destination"
+                cp -Rv "$i" "$destination"
+            done
+
       - store_artifacts:
           path: reports
           destination: reports
