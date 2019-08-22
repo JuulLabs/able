@@ -2,6 +2,14 @@ version: 2
 
 jobs:
   assemble:
+    environment:
+      GRADLE_ARGS: >-
+        -PdisablePreDex
+        -Pkotlin.incremental=false
+        -Pkotlinter.ignoreFailures=true
+        --max-workers 2
+        --no-daemon
+        --stacktrace
     docker:
       - image: circleci/android:api-26-alpha
     steps:
@@ -10,21 +18,15 @@ jobs:
           key: gradle-{{ checksum "settings.gradle" }}-{{ checksum "build.gradle" }}-{{ checksum "core/build.gradle" }}-{{ checksum "processor/build.gradle" }}-{{ checksum "retry/build.gradle" }}-{{ checksum "throw/build.gradle" }}-{{ checksum "timber-logger/build.gradle" }}
       - run:
           name: Android Assemble, Check
-          command: >
-                     ./gradlew
-                     -PdisablePreDex
-                     -Pkotlin.incremental=false
-                     -Pkotlinter.ignoreFailures=true
-                     --max-workers 2
-                     --no-daemon
-                     --stacktrace
-                     assemble check
+          command: ./gradlew $GRADLE_ARGS assemble check
       - run:
           name: Keyring
           command: mkdir -p ~/.gnupg && echo "$SIGNING_SECRET_KEY_RING" | base64 --decode > ~/.gnupg/secring.gpg
+
       - run:
           name: Deploy
           command: .circleci/deploy.sh
+
       - save_cache:
           paths:
             - ~/.gradle
@@ -46,23 +48,52 @@ jobs:
                 cp "$i" "$destination"
             done
           when: always
+
       - store_test_results:
           path: junit
 
       # Save test reports for all modules to single directory. This will recursively copy the test
       # results directories that contain the `index.html` (and supporting assets, such as CSS files)
-      # to a subdirectory of `./reports/` (named according to the module name, e.g. `./reports/app/`
-      # for `app` module).
+      # to a subdirectory of `./reports/tests/` (named according to the module name, e.g.
+      # `./reports/tests/app/` for `app` module).
       - run:
           name: Save Test Reports
           command: |
             for i in $(find . -type d | grep -E -o '.*\/build\/reports\/tests\/[^/.]*$');
             do
                 module=$(echo "$i" | sed -E 's/\.\/([^/.]*)\/build\/reports\/tests\/[^/.]*/\1/')
-                destination="./reports/$module/"
+                destination="./reports/tests/$module/"
                 mkdir -p "$destination"
                 cp -Rv "$i" "$destination"
             done
+
+      # Download Code Climate test reporter as a static binary
+      - run:
+          name: Setup Code Climate test-reporter
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+      
+      # Run JaCoCo Reports & Upload to Code Climate
+      - run:
+          name: Run Code Coverage
+          command: ./scripts/jacoco-code-climate.sh
+
+      # Save jacoco reports for all modules to single directory. This will recursively copy the test
+      # results directories that contain the `index.html` (and supporting assets, such as CSS files)
+      # to a subdirectory of `./reports/jacoco/` (named according to the module name, e.g.
+      # `./reports/jacoco/app/` for `app` module).
+      - run:
+          name: Save JaCoCo Reports
+          command: |
+            for i in $(find . -type d | grep -E -o '.*\/build\/reports\/jacoco\/[^/.]*$');
+            do
+                module=$(echo "$i" | sed -E 's/\.\/([^/.]*)\/build\/reports\/jacoco\/[^/.]*/\1/')
+                destination="./reports/jacoco/$module/"
+                mkdir -p "$destination"
+                cp -Rv "$i" "$destination"
+            done
+
       - store_artifacts:
           path: reports
           destination: reports
