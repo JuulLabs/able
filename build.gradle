@@ -22,6 +22,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:3.1.4'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
+        classpath 'com.dicedmelon.gradle:jacoco-android:0.1.4'
 
         /* [Gradle Android Maven plugin](https://github.com/dcendents/android-maven-gradle-plugin)
          * Provides support for installing to local maven (`~/.m2/repository`).
