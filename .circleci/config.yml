@@ -2,6 +2,14 @@ version: 2
 
 jobs:
   assemble:
+    environment:
+      GRADLE_ARGS: >-
+        -PdisablePreDex
+        -Pkotlin.incremental=false
+        -Pkotlinter.ignoreFailures=true
+        --max-workers 2
+        --no-daemon
+        --stacktrace
     docker:
       - image: circleci/android:api-26-alpha
     steps:
@@ -10,21 +18,15 @@ jobs:
           key: gradle-{{ checksum "settings.gradle" }}-{{ checksum "build.gradle" }}-{{ checksum "core/build.gradle" }}-{{ checksum "processor/build.gradle" }}-{{ checksum "retry/build.gradle" }}-{{ checksum "throw/build.gradle" }}-{{ checksum "timber-logger/build.gradle" }}
       - run:
           name: Android Assemble, Check
-          command: >
-                     ./gradlew
-                     -PdisablePreDex
-                     -Pkotlin.incremental=false
-                     -Pkotlinter.ignoreFailures=true
-                     --max-workers 2
-                     --no-daemon
-                     --stacktrace
-                     assemble check jacocoTestReport
+          command: ./gradlew $GRADLE_ARGS assemble check
       - run:
           name: Keyring
           command: mkdir -p ~/.gnupg && echo "$SIGNING_SECRET_KEY_RING" | base64 --decode > ~/.gnupg/secring.gpg
+
       - run:
           name: Deploy
           command: .circleci/deploy.sh
+
       - save_cache:
           paths:
             - ~/.gradle
@@ -46,6 +48,7 @@ jobs:
                 cp "$i" "$destination"
             done
           when: always
+
       - store_test_results:
           path: junit
 
@@ -63,6 +66,18 @@ jobs:
                 mkdir -p "$destination"
                 cp -Rv "$i" "$destination"
             done
+
+      # Download Code Climate test reporter as a static binary
+      - run:
+          name: Setup Code Climate test-reporter
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+      
+      # Run JaCoCo Reports & Upload to Code Climate
+      - run:
+          name: Run Code Coverage
+          command: ./scripts/jacoco-code-climate.sh
 
       # Save jacoco reports for all modules to single directory. This will recursively copy the test
       # results directories that contain the `index.html` (and supporting assets, such as CSS files)
