@@ -1,7 +1,7 @@
 apply plugin: 'jacoco-android'
 
 jacoco {
-    toolVersion = "0.8.4"
+    toolVersion = versions.jacocoTool
 }
 
 jacocoAndroidUnitTestReport {

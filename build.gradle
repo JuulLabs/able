@@ -11,7 +11,10 @@ buildscript {
 
         'kotlinTestJunit': '1.3.0',
         'mockK': '1.9.3',
-        'equalsVerifier': '2.5.2'
+        'equalsVerifier': '2.5.2',
+
+        'jacocoAndroid': '0.1.4',
+        'jacocoTool': '0.8.4',
     ]
 
     repositories {
@@ -22,7 +25,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:3.1.4'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
-        classpath 'com.dicedmelon.gradle:jacoco-android:0.1.4'
+        classpath "com.dicedmelon.gradle:jacoco-android:${versions.jacocoAndroid}"
 
         /* [Gradle Android Maven plugin](https://github.com/dcendents/android-maven-gradle-plugin)
          * Provides support for installing to local maven (`~/.m2/repository`).
