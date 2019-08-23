@@ -6,8 +6,8 @@ buildscript {
 
         'able': VERSION_NAME,
 
-        'kotlin': '1.3.0',
-        'coroutines': '1.0.0',
+        'kotlin': '1.3.41',
+        'coroutines': '1.3.0-RC',
 
         'kotlinTestJunit': '1.3.0',
         'mockK': '1.9.3',
