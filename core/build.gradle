@@ -20,11 +20,6 @@ android {
         versionName versions.able
     }
 
-    buildTypes {
-        debug {
-            testCoverageEnabled true
-        }
-    }
 }
 
 task sourcesJar(type: Jar) {
