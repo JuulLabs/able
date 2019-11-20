@@ -67,9 +67,29 @@ jobs:
           path: reports
           destination: reports
 
+  code_coverage:
+    working_directory: ~/project
+    docker:
+      - image: circleci/android:api-28
+    environment:
+      JVM_OPTS: -Xmx1024m
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
+      TERM: dumb
+    steps:
+      - checkout
+      #- *restore_gradle_cache
+
+      # Run JaCoCo Reports & Upload to codecov
+      - run:
+          name: Run Code Coverage
+          command: |
+            ./gradlew jacocoTestReport -PauthToken=$JITPACK_AUTH_TOKEN
+            pip install --user codecov && codecov -t  $CODECOV_TOKEN
+
 workflows:
   version: 2
 
   default:
     jobs:
       - assemble
+      - code_coverage
