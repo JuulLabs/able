@@ -33,7 +33,7 @@ jobs:
           name: Run Code Coverage
           command: |
             ./gradlew jacocoTestReport -PauthToken=$JITPACK_AUTH_TOKEN
-            pip install --user codecov && codecov -t  $CODECOV_TOKEN
+            pip install --user codecov && /home/circleci/.local/bin/codecov -t $CODECOV_TOKEN
 
       # Save test results for all modules.
       #
