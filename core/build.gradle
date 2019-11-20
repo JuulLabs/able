@@ -18,6 +18,7 @@ android {
     defaultConfig {
         minSdkVersion versions.minSdk
         versionName versions.able
+        testCoverageEnabled true
     }
 }
 
