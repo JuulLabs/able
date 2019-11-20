@@ -27,6 +27,8 @@ buildscript {
          * Provides support for installing to local maven (`~/.m2/repository`).
          */
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
+
+        classpath 'com.dicedmelon.gradle:jacoco-android:0.1.4'
     }
 }
 
