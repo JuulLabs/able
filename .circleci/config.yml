@@ -33,7 +33,10 @@ jobs:
           name: Run Code Coverage
           command: |
             ./gradlew jacocoTestReport -PauthToken=$JITPACK_AUTH_TOKEN
-            pip install --user codecov && /home/circleci/.local/bin/codecov -t $CODECOV_TOKEN
+            pip install --user codecov && /home/circleci/.local/bin/codecov -t $CODECOV_TOKEN -v
+      - store_artifacts:
+          path: core/build/reports/jacoco/jacocoTestDebugUnitTestReport/html
+          destination: jacoco
 
       # Save test results for all modules.
       #
