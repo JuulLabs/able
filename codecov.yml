@@ -1,5 +1,6 @@
 codecov:
   require_ci_to_pass: yes
+  bot: juul-mobile-bot
 
 coverage:
   precision: 2
