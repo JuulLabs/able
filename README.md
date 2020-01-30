@@ -1,4 +1,4 @@
-[![codecov](https://codecov.io/gh/JuulLabs-OSS/able/branch/develop/graph/badge.svg)](https://codecov.io/gh/JuulLabs-OSS/able)
+[![codecov](https://codecov.io/gh/JuulLabs-OSS/able/branch/master/graph/badge.svg)](https://codecov.io/gh/JuulLabs-OSS/able)
 
 # Able
 
