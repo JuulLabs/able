@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/JuulLabs-OSS/able/branch/develop/graph/badge.svg)](https://codecov.io/gh/JuulLabs-OSS/able)
+
 # Able
 
 Provides a Kotlin [Coroutines] powered interaction with **A**ndroid's **B**luetooth **L**ow
