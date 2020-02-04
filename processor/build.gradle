@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply from: rootProject.file('gradle/jacoco-android.gradle')
 
 kotlin.experimental.coroutines 'enable'
 
@@ -22,6 +23,7 @@ artifacts {
 
 dependencies {
     api project(':core')
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:${versions.kotlinTestJunit}"
 }
 
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
