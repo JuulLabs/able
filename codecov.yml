@@ -1,7 +1,5 @@
 fixes:
   - "com/juul/able/experimental::"
-  - "com/juul/able/experimental/device::"
   - "com/juul/able/experimental/processor::"
-  - "com/juul/able/experimental/retry::"
   - "com/juul/able/experimental/throwable::"
   - "com/juul/able/experimental/logger/timber::"
