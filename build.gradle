@@ -1,38 +1,24 @@
 buildscript {
-    ext.versions = [
-        'minSdk': 21,
-        'compileSdk': 26,
-        'targetSdk': 26,
-
-        'able': VERSION_NAME,
-
-        'kotlin': '1.3.0',
-        'coroutines': '1.0.0',
-
-        'kotlinTestJunit': '1.3.0',
-        'mockK': '1.9.3',
-        'equalsVerifier': '2.5.2'
-    ]
+    apply from: rootProject.file('gradle/dependencies.gradle')
 
     repositories {
-        google()
         jcenter()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.4'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
-
-        /* [Gradle Android Maven plugin](https://github.com/dcendents/android-maven-gradle-plugin)
-         * Provides support for installing to local maven (`~/.m2/repository`).
-         */
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
-
-        classpath "com.dicedmelon.gradle:jacoco-android:0.1.4"
     }
 }
 
-allprojects {
+plugins {
+    id 'org.jetbrains.kotlin.android' version '1.3.60' apply false
+    id 'org.jmailen.kotlinter' version '2.2.0' apply false
+    id 'com.android.library' version '3.6.2' apply false
+    id 'com.vanniktech.maven.publish' version '0.11.1' apply false
+
+    // `jacoco-android` is incompatible with Gradle 6.x, fails with:
+    // groovy.lang.GroovyRuntimeException: Cannot set the value of read-only property 'executionData'...
+    // https://github.com/arturdm/jacoco-android-gradle-plugin/issues/72
+    id 'com.hiya.jacoco-android' version '0.2' apply false
+}
+
+subprojects {
     repositories {
         google()
         jcenter()
@@ -52,6 +38,18 @@ subprojects {
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+// Prevent publishing if `VERSION_NAME` property is invalid (i.e. enforce `-PVERSION_NAME` command
+// line argument).
+gradle.taskGraph.whenReady { taskGraph ->
+    taskGraph.getAllTasks().findAll { task ->
+        task.name.startsWith('installArchives') || task.name.startsWith('publishArchives')
+    }.forEach { task ->
+        logger.error("VERSION_NAME='" + project.findProperty("VERSION_NAME") + "'")
+        task.doFirst {
+            if (!project.hasProperty("VERSION_NAME") || project.findProperty("VERSION_NAME").startsWith("unspecified")) {
+                logger.error("VERSION_NAME=" + project.findProperty("VERSION_NAME"))
+                throw new GradleException("Unable to publish without valid VERSION_NAME property")
+            }
+        }
+    }
 }
