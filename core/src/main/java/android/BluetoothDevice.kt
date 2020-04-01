@@ -1,31 +1,16 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-@file:JvmName("BluetoothDeviceCoreKt")
-
-package com.juul.able.experimental.android
+package com.juul.able.android
 
 import android.bluetooth.BluetoothDevice
 import android.content.Context
-import com.juul.able.experimental.ConnectGattResult
-import com.juul.able.experimental.CoroutinesDevice
-import com.juul.able.experimental.Gatt
-import com.juul.able.experimental.connectGattOrNull
-import com.juul.able.experimental.messenger.GattCallbackConfig
-
-fun BluetoothDevice.asCoroutinesDevice(
-    callbackConfig: GattCallbackConfig = GattCallbackConfig()
-): CoroutinesDevice = CoroutinesDevice(this, callbackConfig)
+import com.juul.able.device.ConnectGattResult
+import com.juul.able.device.CoroutinesDevice
 
 suspend fun BluetoothDevice.connectGatt(
-    context: Context,
-    autoConnect: Boolean,
-    callbackConfig: GattCallbackConfig = GattCallbackConfig()
-): ConnectGattResult = asCoroutinesDevice(callbackConfig).connectGatt(context, autoConnect)
+    context: Context
+): ConnectGattResult = asCoroutinesDevice().connectGatt(context)
 
-suspend fun BluetoothDevice.connectGattOrNull(
-    context: Context,
-    autoConnect: Boolean,
-    callbackConfig: GattCallbackConfig = GattCallbackConfig()
-): Gatt? = asCoroutinesDevice(callbackConfig).connectGattOrNull(context, autoConnect)
+private fun BluetoothDevice.asCoroutinesDevice() = CoroutinesDevice(this)

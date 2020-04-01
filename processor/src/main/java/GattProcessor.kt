@@ -1,16 +1,16 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental.processor
+package com.juul.able.processor
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import com.juul.able.experimental.Gatt
-import com.juul.able.experimental.WriteType
-import com.juul.able.experimental.messenger.OnCharacteristicRead
-import com.juul.able.experimental.messenger.OnCharacteristicWrite
-import com.juul.able.experimental.messenger.OnDescriptorWrite
+import com.juul.able.gatt.Gatt
+import com.juul.able.gatt.OnCharacteristicRead
+import com.juul.able.gatt.OnCharacteristicWrite
+import com.juul.able.gatt.OnDescriptorWrite
+import com.juul.able.gatt.WriteType
 
 fun Gatt.withProcessors(vararg processors: Processor) = GattProcessor(this, processors)
 

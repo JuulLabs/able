@@ -24,8 +24,7 @@ traditionally rely on [`BluetoothGattCallback`] calls with [suspension functions
     callback: BluetoothGattCallback
 ): BluetoothGatt</code></pre></td>
 <td><pre><code>suspend fun connectGatt(
-    context: Context,
-    autoConnect: Boolean = false
+    context: Context
 ): ConnectGattResult</code><sup>1</sup></pre></td>
 </tr>
 </table>
@@ -36,8 +35,7 @@ traditionally rely on [`BluetoothGattCallback`] calls with [suspension functions
 ```kotlin
 sealed class ConnectGattResult {
     data class Success(val gatt: Gatt) : ConnectGattResult()
-    data class Canceled(val cause: CancellationException) : ConnectGattResult()
-    data class Failure(val cause: Throwable) : ConnectGattResult()
+    data class Failure(val cause: Exception) : ConnectGattResult()
 }
 ```
 
@@ -45,10 +43,6 @@ sealed class ConnectGattResult {
 <tr>
 <td align="center">Android <a href="https://developer.android.com/reference/android/bluetooth/BluetoothGatt"><code>BluetoothGatt</code></a></td>
 <td align="center">Able <code>Gatt</code></td>
-</tr>
-<tr>
-<td><pre><code>fun connect(): Boolean</code></pre></td>
-<td><pre><code>suspend fun connect(): Boolean</code><sup>1</sup></pre></td>
 </tr>
 <tr>
 <td><pre><code>fun disconnect(): Boolean</code></pre></td>
@@ -110,18 +104,18 @@ sealed class ConnectGattResult {
 </table>
 
 <sup>1</sup> _Suspends until `STATE_CONNECTED` or non-`GATT_SUCCESS` is received._<br/>
-<sup>2</sup> _Suspends until `STATE_DISCONNECTED` or non-`GATT_SUCCESS` is received._<br/>
+<sup>2</sup> _Suspends until `STATE_DISCONNECTED` or non-`GATT_SUCCESS` is received, then calls `close()` on underlying [`BluetoothGatt`]._<br/>
 <sup>3</sup> _Throws [`RemoteException`] if underlying [`BluetoothGatt`] call returns `false`._<br/>
-<sup>3</sup> _Throws `GattClosed` if `Gatt` is closed while method is executing._<br/>
-<sup>3</sup> _Throws `GattConnectionLost` if `Gatt` is disconnects while method is executing._
+<sup>3</sup> _Throws `ConnectionLost` if `Gatt` is closed while method is executing._<br/>
 
 ### Details
 
 The primary entry point is the
-`BluetoothDevice.connectGatt(context: Context, autoConnect: Boolean): ConnectGattResult` extension
-function. This extension function acts as a replacement for Android's
+`BluetoothDevice.connectGatt(context: Context): ConnectGattResult` extension function. This
+extension function acts as a replacement for Android's
 [`BluetoothDevice.connectGatt(context: Context, autoConnect: Boolean, callback: BluetoothCallback): BluetoothGatt?`]
-method (which relies on a [`BluetoothGattCallback`]).
+method (which relies on a [`BluetoothGattCallback`]). The `autoConnect` parameter is not
+configurable (and is always `false`).
 
 ### Prerequisites
 
@@ -130,54 +124,34 @@ method (which relies on a [`BluetoothGattCallback`]).
 (e.g. [bluetooth permissions]) are satisfied prior to use; failing to do so will result in
 [`RemoteException`] for most **Able** methods.
 
-## Structured Concurrency
-
-Kotlin Coroutines `0.26.0` introduced [structured concurrency].
+## [Structured Concurrency]
 
 When establishing a connection (e.g. via
-`BluetoothDevice.connectGatt(context: Context, autoConnect: Boolean): ConnectGattResult` extension
-function), if the Coroutine is cancelled then the in-flight connection attempt will be cancelled and
-corresponding [`BluetoothGatt`] will be closed:
+`BluetoothDevice.connectGatt(context: Context): ConnectGattResult` extension function), if the
+Coroutine is cancelled or the connection process fails, then the in-flight connection attempt will
+be cancelled and underlying [`BluetoothGatt`] will be closed:
 
 ```kotlin
 fun connect(context: Context, device: BluetoothDevice) {
-    val deferred = async {
-        device.connectGatt(context, autoConnect = false)
+    val job = launch {
+        device.connectGatt(context)
     }
 
     launch {
-        delay(1000L) // Assume, for this example, that BLE connection takes more than 1 second.
+        delay(1_000L) // Assume, for this example, that BLE connection takes more than 1 second.
 
-        // Cancels the `async` Coroutine and automatically closes the underlying `BluetoothGatt`.
-        deferred.cancel()
+        // Cancels the `launch` Coroutine and automatically closes the underlying `BluetoothGatt`.
+        job.cancel()
     }
-
-    val result = deferred.await() // `result` will be `ConnectGattResult.Canceled`.
 }
 ```
 
 Note that in the above example, if the BLE connection takes less than 1 second, then the
-**established** connection will **not** be cancelled (and `Gatt` will not be closed), and `result`
-will be `ConnectGattResult.Success`.
+**established** connection will **not** be cancelled and `result` will be
+`ConnectGattResult.Success`.
 
-### `Gatt` Coroutine Scope
-
-**Able**'s `Gatt` provides a [`CoroutineScope`], allowing any Coroutine builders to be scoped to the
-`Gatt` instance. For example, you can continually read a characteristic and the Coroutine will
-automatically cancel when the `Gatt` is closed (_error handling omitted for simplicity_):
-
-```kotlin
-fun continuallyReadCharacteristic(gatt: Gatt, serviceUuid: UUID, characteristicUuid: UUID) {
-    val characteristic = gatt.getService(serviceUuid)!!.getCharacteristic(characteristicUuid)!!
-
-    // This Coroutine will automatically cancel when `gatt.close()` is called.
-    gatt.launch {
-        while (isActive) {
-            println("value = ${gatt.readCharacteristic(characteristic).value}")
-        }
-    }
-}
-```
+If `BluetoothDevice.connectGatt(context: Context): ConnectGattResult` returns
+`ConnectGattResult.Success` then it will remain connected until `disconnect()` is called.
 
 # Setup
 
@@ -195,16 +169,16 @@ dependencies {
 
 **Able** provides a number of packages to help extend it's functionality:
 
-| Package           | Functionality                                                                                                   |
-|-------------------|-----------------------------------------------------------------------------------------------------------------|
-| [`processor`]     | A `Processor` adds the ability to process (and optionally modify) GATT data<br/>pre-write or post-read.         |
-| [`throw`]         | Adds extension functions that `throw` exceptions on failures for various BLE<br/>operations.                    |
-| [`timber-logger`] | Routes **Able** logging through [Timber](https://github.com/JakeWharton/timber).                                |
+| Package           | Functionality                                                                                           |
+|-------------------|---------------------------------------------------------------------------------------------------------|
+| [`processor`]     | A `Processor` adds the ability to process (and optionally modify) GATT data<br/>pre-write or post-read. |
+| [`throw`]         | Adds extension functions that `throw` exceptions on failures for various BLE<br/>operations.            |
+| [`timber-logger`] | Routes **Able** logging through [Timber](https://github.com/JakeWharton/timber).                        |
 
 # License
 
 ```
-Copyright 2018 JUUL Labs
+Copyright 2020 JUUL Labs
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -229,8 +203,8 @@ limitations under the License.
 [`BluetoothDevice.connectGatt(context: Context, autoConnect: Boolean, callback: BluetoothCallback): BluetoothGatt?`]: https://developer.android.com/reference/android/bluetooth/BluetoothDevice.html#connectGatt(android.content.Context,%20boolean,%20android.bluetooth.BluetoothGattCallback)
 [`BluetoothAdapter.getDefaultAdapter()`]: https://developer.android.com/reference/android/bluetooth/BluetoothAdapter#getDefaultAdapter()
 [bluetooth permissions]: https://developer.android.com/guide/topics/connectivity/bluetooth#Permissions
-[structured concurrency]: https://medium.com/@elizarov/structured-concurrency-722d765aa952
-[`CoroutineScope`]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.experimental/-coroutine-scope/
+[Structured Concurrency]: https://medium.com/@elizarov/structured-concurrency-722d765aa952
+[`CoroutineScope`]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/
 [`processor`]: processor
 [`throw`]: throw
 [`timber-logger`]: timber-logger

@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental.logger.timber
+package com.juul.able.logger.timber
 
 import android.os.Build
-import com.juul.able.experimental.Logger
+import com.juul.able.Logger
 import timber.log.Timber
 
 private const val MAX_TAG_LENGTH = 23

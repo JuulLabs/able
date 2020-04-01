@@ -26,7 +26,7 @@ class SecureProcessor : Processor {
 }
 
 val gatt = device
-    .connectGattOrThrow(context, autoConnect = false)
+    .connectGattOrThrow(context)
     .withProcessors(SecureProcessor(), LoggingProcessor())
 ```
 

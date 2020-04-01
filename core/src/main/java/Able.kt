@@ -1,25 +1,14 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental
+package com.juul.able
 
-import android.util.Log
-
-interface Logger {
-    fun isLoggable(priority: Int): Boolean
-    fun log(priority: Int, throwable: Throwable? = null, message: String)
-}
+import com.juul.able.logger.AndroidLogger
 
 object Able {
 
-    const val VERBOSE = 2
-    const val DEBUG = 3
-    const val INFO = 4
-    const val WARN = 5
-    const val ERROR = 6
-    const val ASSERT = 7
-
+    @Volatile
     var logger: Logger = AndroidLogger()
 
     inline fun assert(throwable: Throwable? = null, message: () -> String) {
@@ -48,18 +37,7 @@ object Able {
 
     inline fun log(priority: Int, throwable: Throwable? = null, message: () -> String) {
         if (logger.isLoggable(priority)) {
-            logger.log(priority, throwable, message())
+            logger.log(priority, throwable, message.invoke())
         }
-    }
-}
-
-class AndroidLogger : Logger {
-
-    private val tag = "Able"
-
-    override fun isLoggable(priority: Int): Boolean = Log.isLoggable(tag, priority)
-
-    override fun log(priority: Int, throwable: Throwable?, message: String) {
-        Log.println(priority, tag, message)
     }
 }

@@ -1,8 +1,8 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental.logger.timber
+package com.juul.able.logger.timber
 
 private const val CALL_STACK_INDEX = 2
 private val ANONYMOUS_CLASS_REGEX = "(\\$\\d+)+$".toRegex()

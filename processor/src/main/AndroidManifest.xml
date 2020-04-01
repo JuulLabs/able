@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2018 JUUL Labs, Inc.
+  ~ Copyright 2020 JUUL Labs, Inc.
   -->
 
-<manifest package="com.juul.able.experimental.processor" />
+<manifest package="com.juul.able.processor" />

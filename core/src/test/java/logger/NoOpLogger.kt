@@ -1,8 +1,10 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental
+package com.juul.able.logger
+
+import com.juul.able.Logger
 
 class NoOpLogger : Logger {
     override fun isLoggable(priority: Int): Boolean = false

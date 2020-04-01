@@ -1,8 +1,8 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental
+package com.juul.able
 
 import java.util.ArrayDeque
 import kotlin.concurrent.thread
@@ -78,7 +78,7 @@ class FakeBinderThreadHandler(private val binderThreadCount: Int) {
                         operationQueue.poll()?.invoke()
                     }
                 }
-            } catch (e: InterruptedException) {
+            } catch (exception: InterruptedException) {
                 // We've been asked to shutdown, no need to log exception.
             }
         }
