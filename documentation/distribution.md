@@ -1,5 +1,7 @@
 # Distribution
 
+**Able** uses [`gradle-maven-publish-plugin`] for Maven publication, which provides `installArchives` and `uploadArchives` Gradle tasks.
+
 ## Publishing to Maven Central
 
 ### Snapshot
@@ -33,7 +35,16 @@ video guide for detailed instructions.
 
 _Replace `$version` with desired version name. Must end in `-SNAPSHOT` to skip signing process._
 
+To use the dependency from your local maven, add the following to your `build.grade`:
 
+```groovy
+repositories {
+    maven { url "${System.env.HOME}/.m2/repository" }
+}
+```
+
+
+[`gradle-maven-publish-plugin`]: https://github.com/vanniktech/gradle-maven-publish-plugin
 [published to Sonatype]: https://oss.sonatype.org/content/repositories/snapshots/com/juul/able/
 [released from staging]: https://oss.sonatype.org/#stagingProfiles
 [Easy Publishing to Central Repository]: https://youtu.be/dXR4pJ_zS-0?t=191
