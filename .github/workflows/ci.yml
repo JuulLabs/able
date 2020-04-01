@@ -1,0 +1,75 @@
+# Each virtual machine has the same hardware resources available.
+#
+# - 2-core CPU
+# - 7 GB of RAM memory
+# - 14 GB of SSD disk space
+#
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/virtual-environments-for-github-hosted-runners
+
+name: CI
+on: push
+
+env:
+  SONATYPE_NEXUS_USERNAME: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+  SONATYPE_NEXUS_PASSWORD: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+
+jobs:
+  build:
+    runs-on: ubuntu-16.04
+    env:
+      GRADLE_ARGS: >-
+        --stacktrace
+        --no-daemon
+        --max-workers 2
+        -PdisablePreDex
+        -Pkotlin.incremental=false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2-beta
+
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Gradle cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle
+          key: grade-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Check
+        run: ./gradlew $GRADLE_ARGS check jacocoTestDebugUnitTestReport
+
+      - name: Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: true
+
+      - name: Snapshot
+        if: startsWith(github.ref, 'refs/heads/') && endsWith(github.ref, '-SNAPSHOT')
+        run: >-
+          ./gradlew
+          $GRADLE_ARGS
+          --no-parallel
+          uploadArchives
+          -PVERSION_NAME="${GITHUB_REF/refs\/heads\//}"
+
+      - name: Keyring
+        if: startsWith(github.ref, 'refs/tags/')
+        run: mkdir -p ~/.gnupg && echo "${{ secrets.SIGNING_SECRET_KEY_RING }}" | base64 --decode > ~/.gnupg/secring.gpg
+
+      - name: Publish
+        # https://github.community/t5/GitHub-Actions/Run-step-only-for-new-tags/m-p/32448/highlight/true#M1138
+        if: startsWith(github.ref, 'refs/tags/')
+        # https://github.community/t5/GitHub-Actions/How-to-get-just-the-tag-name/m-p/32167/highlight/true#M1027
+        run: >-
+          ./gradlew
+          $GRADLE_ARGS
+          --no-parallel
+          uploadArchives
+          -PVERSION_NAME=${GITHUB_REF/refs\/tags\//}
+          -Psigning.keyId="${{ secrets.SIGNING_KEY_ID }}"
+          -Psigning.password="${{ secrets.SIGNING_PASSWORD }}"
+          -Psigning.secretKeyRingFile="$HOME/.gnupg/secring.gpg"

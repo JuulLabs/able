@@ -1,8 +1,15 @@
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.hiya.jacoco-android'
+    id 'com.vanniktech.maven.publish'
+}
+
 apply from: rootProject.file('gradle/jacoco-android.gradle')
 
-kotlin.experimental.coroutines 'enable'
+mavenPublish {
+    useLegacyMode = true
+}
 
 android {
     compileSdkVersion versions.compileSdk
@@ -12,18 +19,7 @@ android {
     }
 }
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from android.sourceSets.main.java.srcDirs
-}
-
-artifacts {
-    archives sourcesJar
-}
-
 dependencies {
     api project(':core')
-    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:${versions.kotlinTestJunit}"
+    testImplementation deps.kotlin.junit
 }
-
-apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

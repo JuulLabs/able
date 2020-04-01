@@ -1,5 +1,3 @@
-apply plugin: 'jacoco-android'
-
 jacoco {
     toolVersion = "0.8.5"
 }
