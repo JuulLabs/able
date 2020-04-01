@@ -14,7 +14,7 @@ git push origin 1.0.0-SNAPSHOT
 
 ### Release artifacts
 
-Release artifacts are published to staging via GitHub Actions when a tag (without `-SNAPSHOT
+Release artifacts are published to staging via GitHub Actions when a tag (without `-SNAPSHOT`
 postfix) is pushed.
 
 ```
