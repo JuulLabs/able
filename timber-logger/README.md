@@ -10,8 +10,10 @@ Able.logger = TimberLogger()
 
 ## Gradle
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.juul.able/timber-logger/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.juul.able/timber-logger)
+
 ```groovy
 dependencies {
-    implementation "com.juul.able:timber-logger:0.8.0"
+    implementation "com.juul.able:timber-logger:$version"
 }
 ```
