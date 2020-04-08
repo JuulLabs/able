@@ -13,10 +13,7 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
-import android.content.Context
 import android.os.RemoteException
-import com.juul.able.android.connectGatt
-import com.juul.able.device.ConnectGattResult
 import com.juul.able.gatt.CoroutinesGatt
 import com.juul.able.gatt.GattCallback
 import com.juul.able.gatt.OnCharacteristicChanged
@@ -25,11 +22,19 @@ import com.juul.able.gatt.OnCharacteristicWrite
 import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OutOfOrderGattCallback
 import com.juul.able.gatt.writeCharacteristic
+import com.juul.able.test.gatt.FakeBluetoothGattCharacteristic as FakeCharacteristic
+import com.juul.able.test.gatt.FakeBluetoothGattDescriptor as FakeDescriptor
 import com.juul.able.test.logger.ConsoleLoggerTestRule
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import java.util.UUID
+import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
@@ -38,14 +43,6 @@ import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Rule
-import java.util.UUID
-import java.util.concurrent.TimeUnit.SECONDS
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import com.juul.able.test.gatt.FakeBluetoothGattCharacteristic as FakeCharacteristic
-import com.juul.able.test.gatt.FakeBluetoothGattDescriptor as FakeDescriptor
 
 private val testUuid = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
 

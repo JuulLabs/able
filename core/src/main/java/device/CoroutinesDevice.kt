@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothGatt.STATE_CONNECTED
 import android.content.Context
 import android.os.RemoteException
 import com.juul.able.Able
+import com.juul.able.android.connectGatt
 import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
 import com.juul.able.gatt.CoroutinesGatt
@@ -16,7 +17,6 @@ import com.juul.able.gatt.GattCallback
 import com.juul.able.gatt.suspendUntilConnectionState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.newSingleThreadContext
-import com.juul.able.android.connectGatt
 
 private const val DISPATCHER_NAME = "Gatt"
 
