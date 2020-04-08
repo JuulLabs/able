@@ -5,7 +5,7 @@
 package com.juul.able.test.logger
 
 import com.juul.able.Able
-import com.juul.able.Logger
+import com.juul.able.logger.Logger
 import java.util.Collections
 import org.junit.rules.TestRule
 import org.junit.runner.Description

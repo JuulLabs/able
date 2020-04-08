@@ -4,12 +4,12 @@
 
 package com.juul.able.test.logger
 
-import com.juul.able.ASSERT
-import com.juul.able.ERROR
-import com.juul.able.INFO
-import com.juul.able.Logger
-import com.juul.able.VERBOSE
-import com.juul.able.WARN
+import com.juul.able.logger.ASSERT
+import com.juul.able.logger.ERROR
+import com.juul.able.logger.INFO
+import com.juul.able.logger.Logger
+import com.juul.able.logger.VERBOSE
+import com.juul.able.logger.WARN
 
 private const val TAG = "Able"
 
