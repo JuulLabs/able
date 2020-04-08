@@ -4,7 +4,14 @@
 
 package com.juul.able
 
+import com.juul.able.logger.ASSERT
 import com.juul.able.logger.AndroidLogger
+import com.juul.able.logger.DEBUG
+import com.juul.able.logger.ERROR
+import com.juul.able.logger.INFO
+import com.juul.able.logger.Logger
+import com.juul.able.logger.VERBOSE
+import com.juul.able.logger.WARN
 
 object Able {
 

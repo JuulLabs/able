@@ -2,7 +2,7 @@
  * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able
+package com.juul.able.logger
 
 /*
  * Log values chosen to match Android's:
