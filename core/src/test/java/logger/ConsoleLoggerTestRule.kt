@@ -2,7 +2,7 @@
  * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.logger
+package com.juul.able.test.logger
 
 import com.juul.able.Able
 import com.juul.able.Logger

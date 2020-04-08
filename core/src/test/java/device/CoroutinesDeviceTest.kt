@@ -2,7 +2,7 @@
  * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.device
+package com.juul.able.test.device
 
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
@@ -11,25 +11,28 @@ import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_CONNECTING
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
+import com.juul.able.device.ConnectGattResult
 import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
+import com.juul.able.device.ConnectionFailed
+import com.juul.able.device.CoroutinesDevice
 import com.juul.able.gatt.ConnectionLost
 import com.juul.able.gatt.GATT_CONN_CANCEL
 import com.juul.able.gatt.GattCallback
 import com.juul.able.gatt.GattStatusFailure
 import com.juul.able.gatt.OnConnectionStateChange
-import com.juul.able.logger.ConsoleLoggerTestRule
+import com.juul.able.test.logger.ConsoleLoggerTestRule
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import org.junit.Rule
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class CoroutinesDeviceTest {
 

@@ -16,6 +16,7 @@ import com.juul.able.gatt.GattCallback
 import com.juul.able.gatt.suspendUntilConnectionState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.newSingleThreadContext
+import com.juul.able.android.connectGatt
 
 private const val DISPATCHER_NAME = "Gatt"
 

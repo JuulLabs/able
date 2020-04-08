@@ -2,21 +2,21 @@
  * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able
+package com.juul.able.test
 
 import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import com.juul.able.gatt.FakeBluetoothGattCharacteristic as FakeCharacteristic
-import com.juul.able.gatt.FakeBluetoothGattDescriptor as FakeDescriptor
 import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnDescriptorRead
 import com.juul.able.gatt.OnMtuChanged
+import nl.jqno.equalsverifier.EqualsVerifier
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import nl.jqno.equalsverifier.EqualsVerifier
+import com.juul.able.test.gatt.FakeBluetoothGattCharacteristic as FakeCharacteristic
+import com.juul.able.test.gatt.FakeBluetoothGattDescriptor as FakeDescriptor
 
 private val testUuid = "01234567-89ab-cdef-0123-456789abcdef".toUuid()
 

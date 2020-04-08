@@ -2,9 +2,10 @@
  * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.gatt
+package com.juul.able.test.gatt
 
 import android.bluetooth.BluetoothGattCharacteristic
+import com.juul.able.gatt.WriteType
 import java.util.UUID
 
 class FakeBluetoothGattCharacteristic(

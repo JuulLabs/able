@@ -2,7 +2,7 @@
  * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.gatt
+package com.juul.able.test.gatt
 
 import android.bluetooth.BluetoothGattDescriptor
 import java.util.UUID
