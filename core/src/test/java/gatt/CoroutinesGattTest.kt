@@ -362,6 +362,7 @@ class CoroutinesGattTest {
             runBlocking {
                 assertFailsWith<TimeoutCancellationException> {
                     withTimeout(200L) {
+                        verify(exactly = 0) { bluetoothGatt.close() }
                         gatt.disconnect()
                     }
                 }
