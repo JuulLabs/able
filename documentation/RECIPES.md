@@ -10,14 +10,9 @@ val serviceUuid = "F000AA80-0451-4000-B000-000000000000".toUuid()
 val characteristicUuid = "F000AA83-0451-4000-B000-000000000000".toUuid()
 
 fun connect(context: Context, device: BluetoothDevice) = launch {
-    when (val result = device.connectGatt(context)) {
+    val gatt = when (val result = device.connectGatt(context)) {
         is Success -> result.gatt
-        is Failure ->
-    val gatt = device.connectGatt(context).let { result ->
-        when (result) {
-            is Success -> result.gatt
-            is Failure -> throw IllegalStateException("Connection failed.", result.cause)
-        }
+        is Failure -> throw result.cause
     }
 
     try {
@@ -30,8 +25,14 @@ fun connect(context: Context, device: BluetoothDevice) = launch {
             // read characteristic failed
         }
     } finally {
-        withContext(NonCancellable) {
-            gatt.disconnect()
+        gatt.disconnect(timeout = 30_000L)
+    }
+}
+
+private suspend fun Gatt.disconnect(timeout: Long) {
+    withContext(NonCancellable) {
+        withTimeoutOrNull(timeout) {
+            disconnect()
         }
     }
 }
@@ -103,8 +104,14 @@ launch {
     val value = try {
         gatt.readCharacteristic(characteristic).value
     } finally {
-        withContext(NonCancellable) {
-            gatt.disconnect()
+        gatt.disconnect(timeout = 30_000L)
+    }
+}
+
+private suspend fun Gatt.disconnect(timeout: Long) {
+    withContext(NonCancellable) {
+        withTimeoutOrNull(timeout) {
+            disconnect()
         }
     }
 }

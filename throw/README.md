@@ -15,7 +15,15 @@ fun connect(context: Context, device: BluetoothDevice) = launch {
         val value = gatt.readCharacteristicOrThrow(characteristic).value
         println("value = $value")
     } finally {
-        gatt.disconnect()
+        gatt.disconnect(timeout = 30_000L)
+    }
+}
+
+private suspend fun Gatt.disconnect(timeout: Long) {
+    withContext(NonCancellable) {
+        withTimeoutOrNull(timeout) {
+            disconnect()
+        }
     }
 }
 ```

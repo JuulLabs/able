@@ -116,8 +116,8 @@ private val redDescriptor = FakeDescriptor("bce47f52-6c2a-43e9-a382-2c460fcc6f6c
 private val blackDescriptor = FakeDescriptor("de923c26-b18a-474a-84e0-7837300fc666".toUuid())
 
 /**
- * Preconfigures [EqualsVerifier] for validating proper implementation of `data class`es in the
- * `Messages.kt` file that have custom `equals` and `hashCode` implementations:
+ * Preconfigures [EqualsVerifier] for validating proper implementation of `GattCallback` event
+ * `data class`es that have custom `equals` and `hashCode` implementations:
  *
  * > `EqualsVerifier` can be used in unit tests to verify whether the contract for the `equals` and
  * > `hashCode` methods in a class is met.
