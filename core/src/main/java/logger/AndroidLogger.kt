@@ -5,7 +5,6 @@
 package com.juul.able.logger
 
 import android.util.Log
-import com.juul.able.Logger
 
 private const val TAG = "Able"
 
