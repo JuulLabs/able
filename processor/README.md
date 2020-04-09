@@ -34,8 +34,10 @@ val gatt = device
 
 ## Gradle
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.juul.able/processor/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.juul.able/processor)
+
 ```groovy
 dependencies {
-    implementation "com.juul.able:processor:0.8.0"
+    implementation "com.juul.able:processor:$version"
 }
 ```
