@@ -12,7 +12,7 @@ fun connect(context: Context, device: BluetoothDevice) = launch {
         val characteristic = gatt
             .getService("F000AA80-0451-4000-B000-000000000000".toUuid())!!
             .getCharacteristic("F000AA83-0451-4000-B000-000000000000".toUuid())
-        val value = gatt.readCharacteristicOrThrow(characteristic).value
+        val value = gatt.readCharacteristicOrThrow(characteristic)
         println("value = $value")
     } finally {
         gatt.disconnect(timeout = 30_000L)
