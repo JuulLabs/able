@@ -102,7 +102,7 @@ class CoroutinesDeviceTest {
     }
 
     @Test
-    fun `Receive STATE_DISCONNECTED during connectGatt returns Failure`() = runBlocking<Unit> {
+    fun `Receiving STATE_DISCONNECTED during connectGatt returns Failure`() = runBlocking<Unit> {
         val callbackSlot = slot<BluetoothGattCallback>()
         lateinit var bluetoothGatt: BluetoothGatt
         val bluetoothDevice = mockk<BluetoothDevice> {
