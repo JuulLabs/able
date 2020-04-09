@@ -5,7 +5,7 @@
 package com.juul.able.logger.timber
 
 import android.os.Build
-import com.juul.able.Logger
+import com.juul.able.logger.Logger
 import timber.log.Timber
 
 private const val MAX_TAG_LENGTH = 23
