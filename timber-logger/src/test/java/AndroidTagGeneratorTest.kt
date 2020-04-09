@@ -5,7 +5,7 @@
 package com.juul.able.logger.timber.test
 
 import com.juul.able.Able
-import com.juul.able.Logger
+import com.juul.able.logger.Logger
 import com.juul.able.logger.timber.AndroidTagGenerator
 import kotlin.test.Test
 import kotlin.test.assertEquals
