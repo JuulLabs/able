@@ -2,8 +2,6 @@
  * Copyright 2020 JUUL Labs, Inc.
  */
 
-@file:Suppress("RedundantUnitReturnType")
-
 package com.juul.able.gatt
 
 import android.bluetooth.BluetoothGatt
