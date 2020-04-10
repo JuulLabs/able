@@ -10,9 +10,7 @@ private const val TAG = "Able"
 
 class AndroidLogger : Logger {
 
-    override fun isLoggable(
-        priority: Int
-    ): Boolean = Log.isLoggable(TAG, priority)
+    override fun isLoggable(priority: Int): Boolean = true
 
     override fun log(
         priority: Int,
