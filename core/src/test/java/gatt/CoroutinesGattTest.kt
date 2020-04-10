@@ -340,7 +340,7 @@ class CoroutinesGattTest {
                 gatt.disconnect()
             }
 
-            verify { bluetoothGatt.close() }
+            verify(exactly = 1) { bluetoothGatt.close() }
         }
     }
 
@@ -368,7 +368,7 @@ class CoroutinesGattTest {
                 }
             }
 
-            verify { bluetoothGatt.close() }
+            verify(exactly = 1) { bluetoothGatt.close() }
         }
     }
 
@@ -406,7 +406,7 @@ class CoroutinesGattTest {
                 actual = events
             )
 
-            verify { bluetoothGatt.close() }
+            verify(exactly = 1) { bluetoothGatt.close() }
         }
     }
 
@@ -424,7 +424,7 @@ class CoroutinesGattTest {
 
             val events = runBlocking {
                 callback.onConnectionStateChange(bluetoothGatt, GATT_SUCCESS, STATE_DISCONNECTED)
-                verify { bluetoothGatt.close() }
+                verify(exactly = 1) { bluetoothGatt.close() }
                 gatt.onCharacteristicChanged.toList()
             }
 

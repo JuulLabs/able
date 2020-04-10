@@ -11,6 +11,7 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
 import com.juul.able.Able
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BroadcastChannel
@@ -31,20 +32,23 @@ internal class GattCallback(
 
     val onResponse = Channel<Any>(CONFLATED)
 
+    private val isClosed = AtomicBoolean()
+
     private fun onDisconnecting() {
         onCharacteristicChanged.close()
         onResponse.close(ConnectionLost())
     }
 
-    @ExperimentalCoroutinesApi
     fun close(gatt: BluetoothGatt) {
-        Able.verbose { "Closing GattCallback belonging to device ${gatt.device}" }
-        onDisconnecting() // Duplicate call in case Android skips STATE_DISCONNECTING.
-        onConnectionStateChange.close()
-        gatt.close()
+        if (isClosed.compareAndSet(false, true)) {
+            Able.verbose { "Closing GattCallback belonging to device ${gatt.device}" }
+            onDisconnecting() // Duplicate call in case Android skips STATE_DISCONNECTING.
+            onConnectionStateChange.close()
+            gatt.close()
 
-        // todo: Remove once https://github.com/Kotlin/kotlinx.coroutines/issues/261 is fixed.
-        dispatcher.close()
+            // todo: Remove when https://github.com/Kotlin/kotlinx.coroutines/issues/261 is fixed.
+            dispatcher.close()
+        }
     }
 
     override fun onConnectionStateChange(

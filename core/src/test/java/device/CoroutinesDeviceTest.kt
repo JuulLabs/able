@@ -69,7 +69,7 @@ class CoroutinesDeviceTest {
             expected = OnConnectionStateChange(GATT_CONN_CANCEL, STATE_CONNECTED),
             actual = (failure.cause.cause as GattStatusFailure).event
         )
-        verify { bluetoothGatt.close() }
+        verify(exactly = 1) { bluetoothGatt.close() }
     }
 
     @Test
@@ -129,7 +129,7 @@ class CoroutinesDeviceTest {
             expected = ConnectionLost::class.java,
             actual = failure.cause.cause!!.javaClass
         )
-        verify { bluetoothGatt.close() }
+        verify(exactly = 1) { bluetoothGatt.close() }
     }
 
     @Test
@@ -151,7 +151,7 @@ class CoroutinesDeviceTest {
         while (!callbackSlot.isCaptured) yield()
         job.cancelAndJoin()
 
-        verify { bluetoothGatt.close() }
+        verify(exactly = 1) { bluetoothGatt.close() }
     }
 }
 

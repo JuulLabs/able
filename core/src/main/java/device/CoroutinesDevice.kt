@@ -57,12 +57,12 @@ internal class CoroutinesDevice(
             Success(gatt)
         } catch (cancellation: CancellationException) {
             Able.info { "connectGatt() canceled for $this" }
-            bluetoothGatt.close()
+            callback.close(bluetoothGatt)
             dispatcher.close()
             throw cancellation
         } catch (failure: Exception) {
             Able.warn { "connectGatt() failed for $this" }
-            bluetoothGatt.close()
+            callback.close(bluetoothGatt)
             dispatcher.close()
             Failure(ConnectionFailed("Failed to connect to device $device", failure))
         }

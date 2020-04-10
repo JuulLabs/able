@@ -28,7 +28,7 @@ subprojects {
 subprojects {
     tasks.withType(Test) {
         testLogging {
-            events "passed", "skipped", "failed", "standardOut", "standardError"
+            events "started", "passed", "skipped", "failed", "standardOut", "standardError"
             exceptionFormat "full"
             showExceptions true
             showStackTraces true
