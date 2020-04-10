@@ -40,7 +40,7 @@ jobs:
           key: grade-${{ hashFiles('**/*.gradle*') }}
 
       - name: Check
-        run: ./gradlew $GRADLE_ARGS check jacocoTestDebugUnitTestReport
+        run: ./gradlew $GRADLE_ARGS check jacocoTestReport
 
       - name: Codecov
         uses: codecov/codecov-action@v1

@@ -1,14 +1,15 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental.logger.timber
+package com.juul.able.logger.timber.test
 
-import com.juul.able.experimental.Able
-import com.juul.able.experimental.Logger
-import org.junit.BeforeClass
-import org.junit.Test
+import com.juul.able.Able
+import com.juul.able.logger.Logger
+import com.juul.able.logger.timber.AndroidTagGenerator
+import kotlin.test.Test
 import kotlin.test.assertEquals
+import org.junit.BeforeClass
 
 class AndroidTagGeneratorTest {
 
@@ -26,14 +27,14 @@ class AndroidTagGeneratorTest {
     }
 
     @Test
-    fun tagMatchesClassname() {
+    fun `Tag matches classname`() {
         val dog = Dog()
         dog.bark()
         assertEquals(dog.javaClass.simpleName, logger.lastTag)
     }
 
     @Test
-    fun tagFromAnonymousMethod() {
+    fun `Tag is captured from anonymous method`() {
         val anonymous = object {
             fun go() {
                 Able.info { "hello world" }
@@ -46,7 +47,7 @@ class AndroidTagGeneratorTest {
     }
 
     @Test
-    fun tagFromAnonymousMethodWithinRunnable() {
+    fun `Tag is captured from anonymous method within Runnable`() {
         Runnable {
             object {
                 fun go() {

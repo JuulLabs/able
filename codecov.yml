@@ -1,5 +1,4 @@
 fixes:
-  - "com/juul/able/experimental::"
-  - "com/juul/able/experimental/processor::"
-  - "com/juul/able/experimental/throwable::"
-  - "com/juul/able/experimental/logger/timber::"
+  - "com/juul/able/logger/timber::"
+  - "com/juul/able/processor::"
+  - "com/juul/able/throwable::"

@@ -1,12 +1,12 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental.processor
+package com.juul.able.processor
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import com.juul.able.experimental.WriteType
+import com.juul.able.gatt.WriteType
 
 /**
  * Processors add the ability to process (and optionally modify) GATT data pre-write or post-read.

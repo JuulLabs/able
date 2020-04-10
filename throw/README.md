@@ -4,16 +4,26 @@ Adds extension functions that `throw` exceptions on failures for various BLE ope
 
 ```kotlin
 fun connect(context: Context, device: BluetoothDevice) = launch {
-    device.connectGattOrThrow(context, autoConnect = false).use { gatt ->
+    val gatt = device.connectGattOrThrow(context)
+
+    try {
         gatt.discoverServicesOrThrow()
 
         val characteristic = gatt
             .getService("F000AA80-0451-4000-B000-000000000000".toUuid())!!
             .getCharacteristic("F000AA83-0451-4000-B000-000000000000".toUuid())
-        val value = gatt.readCharacteristicOrThrow(characteristic).value
+        val value = gatt.readCharacteristicOrThrow(characteristic)
         println("value = $value")
+    } finally {
+        gatt.disconnect(timeout = 30_000L)
+    }
+}
 
-        gatt.disconnect()
+private suspend fun Gatt.disconnect(timeout: Long) {
+    withContext(NonCancellable) {
+        withTimeoutOrNull(timeout) {
+            disconnect()
+        }
     }
 }
 ```

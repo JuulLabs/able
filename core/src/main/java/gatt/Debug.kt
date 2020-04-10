@@ -1,8 +1,8 @@
 /*
- * Copyright 2018 JUUL Labs, Inc.
+ * Copyright 2020 JUUL Labs, Inc.
  */
 
-package com.juul.able.experimental
+package com.juul.able.gatt
 
 import android.bluetooth.BluetoothGatt.GATT_CONNECTION_CONGESTED
 import android.bluetooth.BluetoothGatt.GATT_FAILURE
@@ -39,13 +39,13 @@ private const val L2CAP_CONN_CANCEL = 256
 /**
  * https://android.googlesource.com/platform/external/bluetooth/bluedroid/+/lollipop-release/stack/include/gatt_api.h#106
  */
-private const val GATT_CONN_L2C_FAILURE = 1
-private const val GATT_CONN_TIMEOUT = HCI_ERR_CONNECTION_TOUT
-private const val GATT_CONN_TERMINATE_PEER_USER = HCI_ERR_PEER_USER
-private const val GATT_CONN_TERMINATE_LOCAL_HOST = HCI_ERR_CONN_CAUSE_LOCAL_HOST
-private const val GATT_CONN_FAIL_ESTABLISH = HCI_ERR_CONN_FAILED_ESTABLISHMENT
-private const val GATT_CONN_LMP_TIMEOUT = HCI_ERR_LMP_RESPONSE_TIMEOUT
-private const val GATT_CONN_CANCEL = L2CAP_CONN_CANCEL
+internal const val GATT_CONN_L2C_FAILURE = 1
+internal const val GATT_CONN_TIMEOUT = HCI_ERR_CONNECTION_TOUT
+internal const val GATT_CONN_TERMINATE_PEER_USER = HCI_ERR_PEER_USER
+internal const val GATT_CONN_TERMINATE_LOCAL_HOST = HCI_ERR_CONN_CAUSE_LOCAL_HOST
+internal const val GATT_CONN_FAIL_ESTABLISH = HCI_ERR_CONN_FAILED_ESTABLISHMENT
+internal const val GATT_CONN_LMP_TIMEOUT = HCI_ERR_LMP_RESPONSE_TIMEOUT
+internal const val GATT_CONN_CANCEL = L2CAP_CONN_CANCEL
 
 /**
  * 0xE0 ~ 0xFC reserved for future use
@@ -89,7 +89,7 @@ internal fun GattState.asGattStateString() = when (this) {
     else -> "STATE_UNKNOWN"
 }.let { name -> "$name($this)" }
 
-internal fun GattStatus.asGattConnectionStatusString() = when (this) {
+internal fun GattConnectionStatus.asGattConnectionStatusString() = when (this) {
     GATT_SUCCESS -> "GATT_SUCCESS"
     GATT_CONN_L2C_FAILURE -> "GATT_CONN_L2C_FAILURE"
     GATT_CONN_TIMEOUT -> "GATT_CONN_TIMEOUT"
