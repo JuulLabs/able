@@ -44,6 +44,7 @@ class CoroutinesGatt internal constructor(
 
     override suspend fun disconnect() {
         try {
+            Able.info { "Disconnecting $this" }
             bluetoothGatt.disconnect()
             suspendUntilConnectionState(STATE_DISCONNECTED)
         } finally {
