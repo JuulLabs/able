@@ -38,6 +38,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -465,6 +468,39 @@ class CoroutinesGattTest {
             }
 
             verify(exactly = 1) { bluetoothGatt.close() }
+        }
+    }
+
+    @Test
+    fun `Gatt action honors cancellation while waiting on response`() {
+        createDispatcher().use { dispatcher ->
+            val didReadCharacteristic = Channel<Unit>(CONFLATED)
+            val callback = GattCallback(dispatcher)
+            val bluetoothGatt = mockk<BluetoothGatt> {
+                every { close() } returns Unit
+                every { device } returns mockk {
+                    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
+                }
+                every { readCharacteristic(any()) } answers {
+                    didReadCharacteristic.offer(Unit)
+                    true
+                }
+            }
+
+            val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
+            runBlocking {
+                val job = launch {
+                    gatt.readCharacteristic(createCharacteristic())
+                }
+
+                didReadCharacteristic.receive()
+
+                // Give `performBluetoothAction` some time to start "listening" for response (by
+                // invoking `receive` on `onResponse` Channel.
+                delay(500L)
+
+                job.cancelAndJoin()
+            }
         }
     }
 }
