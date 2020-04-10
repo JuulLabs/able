@@ -14,8 +14,10 @@ import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
 import android.os.RemoteException
+import com.juul.able.gatt.ConnectionLost
 import com.juul.able.gatt.CoroutinesGatt
 import com.juul.able.gatt.GattCallback
+import com.juul.able.gatt.GattResponseFailure
 import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnCharacteristicWrite
@@ -325,8 +327,8 @@ class CoroutinesGattTest {
         createDispatcher().use { dispatcher ->
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
+                every { close() } returns Unit
                 every { device } returns mockk {
-                    every { close() } returns Unit
                     every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
                 }
                 every { disconnect() } answers {
@@ -349,8 +351,8 @@ class CoroutinesGattTest {
         createDispatcher().use { dispatcher ->
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
+                every { close() } returns Unit
                 every { device } returns mockk {
-                    every { close() } returns Unit
                     every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
                 }
                 every { disconnect() } answers {
@@ -377,8 +379,8 @@ class CoroutinesGattTest {
         createDispatcher().use { dispatcher ->
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
+                every { close() } returns Unit
                 every { device } returns mockk {
-                    every { close() } returns Unit
                     every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
                 }
             }
@@ -415,8 +417,8 @@ class CoroutinesGattTest {
         createDispatcher().use { dispatcher ->
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
+                every { close() } returns Unit
                 every { device } returns mockk {
-                    every { close() } returns Unit
                     every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
                 }
             }
@@ -432,6 +434,37 @@ class CoroutinesGattTest {
                 expected = emptyList(),
                 actual = events
             )
+        }
+    }
+
+    @Test
+    fun `Gatt action throws GattResponseFailure if connection drops while executing request`() {
+        createDispatcher().use { dispatcher ->
+            val callback = GattCallback(dispatcher)
+            val bluetoothGatt = mockk<BluetoothGatt> {
+                every { close() } returns Unit
+                every { device } returns mockk {
+                    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
+                }
+                every { readCharacteristic(any()) } answers {
+                    callback.onConnectionStateChange(this@mockk, GATT_SUCCESS, STATE_DISCONNECTED)
+                    true
+                }
+            }
+
+            val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
+            runBlocking {
+                val cause = assertFailsWith<GattResponseFailure> {
+                    gatt.readCharacteristic(createCharacteristic())
+                }.cause
+
+                assertEquals<Class<out Throwable>>(
+                    expected = ConnectionLost::class.java,
+                    actual = cause!!.javaClass
+                )
+            }
+
+            verify(exactly = 1) { bluetoothGatt.close() }
         }
     }
 }

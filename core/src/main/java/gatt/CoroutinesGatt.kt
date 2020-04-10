@@ -21,6 +21,11 @@ import kotlinx.coroutines.withContext
 
 class OutOfOrderGattCallback(message: String) : IllegalStateException(message)
 
+class GattResponseFailure(
+    message: String,
+    cause: Throwable?
+) : IllegalStateException(message, cause)
+
 class CoroutinesGatt internal constructor(
     private val bluetoothGatt: BluetoothGatt,
     private val dispatcher: ExecutorCoroutineDispatcher,
@@ -125,7 +130,11 @@ class CoroutinesGatt internal constructor(
         }
 
         Able.verbose { "$methodName ← Waiting for BluetoothGattCallback" }
-        val response = callback.onResponse.receive()
+        val response = try {
+            callback.onResponse.receive()
+        } catch (e: Exception) {
+            throw GattResponseFailure("Failed to receive response for $methodName", e)
+        }
         Able.info { "$methodName ← $response" }
 
         // `lock` should always enforce a 1:1 matching of request to response, but if an Android
