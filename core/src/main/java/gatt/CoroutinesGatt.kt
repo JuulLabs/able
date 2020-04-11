@@ -24,7 +24,7 @@ class OutOfOrderGattCallback(message: String) : IllegalStateException(message)
 
 class GattResponseFailure(
     message: String,
-    cause: Throwable?
+    cause: Throwable
 ) : IllegalStateException(message, cause)
 
 class CoroutinesGatt internal constructor(
