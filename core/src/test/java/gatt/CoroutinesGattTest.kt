@@ -495,10 +495,13 @@ class CoroutinesGattTest {
 
                 didReadCharacteristic.receive()
 
-                // Give `performBluetoothAction` some time to start "listening" for response (by
-                // invoking `receive` on `onResponse` Channel).
+                // Give `performBluetoothAction` some time to start "listening" for response (i.e.
+                // time to reach `callback.onResponse.receive()` call in `performBluetoothAction`).
                 delay(500L)
 
+                // Throws an Exception if `performBluetoothAction` throws a
+                // non-CancellationException on cancellation request, thereby validating that we
+                // honored cancellation appropriately if this call doesn't throw an Exception.
                 job.cancelAndJoin()
             }
         }
