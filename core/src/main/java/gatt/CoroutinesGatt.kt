@@ -53,9 +53,9 @@ class CoroutinesGatt internal constructor(
     }
 
     override suspend fun discoverServices(): GattStatus =
-        performBluetoothAction("discoverServices") {
+        performBluetoothAction<OnServicesDiscovered>("discoverServices") {
             bluetoothGatt.discoverServices()
-        }
+        }.status
 
     override suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
