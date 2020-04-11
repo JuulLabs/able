@@ -106,7 +106,7 @@ sealed class ConnectGattResult {
 <sup>1</sup> _Suspends until `STATE_CONNECTED` or non-`GATT_SUCCESS` is received._<br/>
 <sup>2</sup> _Suspends until `STATE_DISCONNECTED` or non-`GATT_SUCCESS` is received, then calls `close()` on underlying [`BluetoothGatt`]._<br/>
 <sup>3</sup> _Throws [`RemoteException`] if underlying [`BluetoothGatt`] call returns `false`._<br/>
-<sup>3</sup> _Throws `ConnectionLost` if `Gatt` is closed while method is executing._<br/>
+<sup>3</sup> _Throws `GattResponseFailure` if an error occurs while waiting for response (e.g. connection is lost)._<br/>
 
 ### Details
 

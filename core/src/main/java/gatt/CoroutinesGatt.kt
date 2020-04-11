@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.os.RemoteException
 import com.juul.able.Able
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asFlow
@@ -20,6 +21,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 class OutOfOrderGattCallback(message: String) : IllegalStateException(message)
+
+class GattResponseFailure(
+    message: String,
+    cause: Throwable
+) : IllegalStateException(message, cause)
 
 class CoroutinesGatt internal constructor(
     private val bluetoothGatt: BluetoothGatt,
@@ -38,6 +44,7 @@ class CoroutinesGatt internal constructor(
 
     override suspend fun disconnect() {
         try {
+            Able.info { "Disconnecting $this" }
             bluetoothGatt.disconnect()
             suspendUntilConnectionState(STATE_DISCONNECTED)
         } finally {
@@ -125,7 +132,13 @@ class CoroutinesGatt internal constructor(
         }
 
         Able.verbose { "$methodName ← Waiting for BluetoothGattCallback" }
-        val response = callback.onResponse.receive()
+        val response = try {
+            callback.onResponse.receive()
+        } catch (e: CancellationException) {
+            throw CancellationException("Waiting on response for $methodName was cancelled", e)
+        } catch (e: Exception) {
+            throw GattResponseFailure("Failed to receive response for $methodName", e)
+        }
         Able.info { "$methodName ← $response" }
 
         // `lock` should always enforce a 1:1 matching of request to response, but if an Android
