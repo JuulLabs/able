@@ -1,0 +1,271 @@
+public final class com/juul/able/Able {
+	public static final field INSTANCE Lcom/juul/able/Able;
+	public final fun assert (Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun assert$default (Lcom/juul/able/Able;Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public final fun debug (Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun debug$default (Lcom/juul/able/Able;Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public final fun error (Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun error$default (Lcom/juul/able/Able;Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public final fun getLogger ()Lcom/juul/able/logger/Logger;
+	public final fun info (Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun info$default (Lcom/juul/able/Able;Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public final fun log (ILjava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun log$default (Lcom/juul/able/Able;ILjava/lang/Throwable;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public final fun setLogger (Lcom/juul/able/logger/Logger;)V
+	public final fun verbose (Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun verbose$default (Lcom/juul/able/Able;Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public final fun warn (Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun warn$default (Lcom/juul/able/Able;Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+}
+
+public final class com/juul/able/BuildConfig {
+	public static final field APPLICATION_ID Ljava/lang/String;
+	public static final field BUILD_TYPE Ljava/lang/String;
+	public static final field DEBUG Z
+	public static final field FLAVOR Ljava/lang/String;
+	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
+	public static final field VERSION_CODE I
+	public static final field VERSION_NAME Ljava/lang/String;
+	public fun <init> ()V
+}
+
+public final class com/juul/able/android/BluetoothDeviceKt {
+	public static final fun connectGatt (Landroid/bluetooth/BluetoothDevice;Landroid/content/Context;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract class com/juul/able/device/ConnectGattResult {
+}
+
+public abstract class com/juul/able/device/ConnectGattResult$Failure : com/juul/able/device/ConnectGattResult {
+	public abstract fun getCause ()Ljava/lang/Exception;
+}
+
+public final class com/juul/able/device/ConnectGattResult$Failure$Connection : com/juul/able/device/ConnectGattResult$Failure {
+	public fun <init> (Ljava/lang/Exception;)V
+	public final fun component1 ()Ljava/lang/Exception;
+	public final fun copy (Ljava/lang/Exception;)Lcom/juul/able/device/ConnectGattResult$Failure$Connection;
+	public static synthetic fun copy$default (Lcom/juul/able/device/ConnectGattResult$Failure$Connection;Ljava/lang/Exception;ILjava/lang/Object;)Lcom/juul/able/device/ConnectGattResult$Failure$Connection;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCause ()Ljava/lang/Exception;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/device/ConnectGattResult$Failure$Rejected : com/juul/able/device/ConnectGattResult$Failure {
+	public fun <init> (Ljava/lang/Exception;)V
+	public final fun component1 ()Ljava/lang/Exception;
+	public final fun copy (Ljava/lang/Exception;)Lcom/juul/able/device/ConnectGattResult$Failure$Rejected;
+	public static synthetic fun copy$default (Lcom/juul/able/device/ConnectGattResult$Failure$Rejected;Ljava/lang/Exception;ILjava/lang/Object;)Lcom/juul/able/device/ConnectGattResult$Failure$Rejected;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getCause ()Ljava/lang/Exception;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/device/ConnectGattResult$Success : com/juul/able/device/ConnectGattResult {
+	public fun <init> (Lcom/juul/able/gatt/Gatt;)V
+	public final fun component1 ()Lcom/juul/able/gatt/Gatt;
+	public final fun copy (Lcom/juul/able/gatt/Gatt;)Lcom/juul/able/device/ConnectGattResult$Success;
+	public static synthetic fun copy$default (Lcom/juul/able/device/ConnectGattResult$Success;Lcom/juul/able/gatt/Gatt;ILjava/lang/Object;)Lcom/juul/able/device/ConnectGattResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getGatt ()Lcom/juul/able/gatt/Gatt;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/juul/able/device/Device {
+	public abstract fun connectGatt (Landroid/content/Context;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/juul/able/gatt/ConnectionLost : java/io/IOException {
+	public fun <init> ()V
+}
+
+public final class com/juul/able/gatt/CoroutinesGatt : com/juul/able/gatt/Gatt {
+	public fun disconnect (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun discoverServices (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getOnCharacteristicChanged ()Lkotlinx/coroutines/flow/Flow;
+	public fun getOnConnectionStateChange ()Lkotlinx/coroutines/flow/Flow;
+	public fun getService (Ljava/util/UUID;)Landroid/bluetooth/BluetoothGattService;
+	public fun getServices ()Ljava/util/List;
+	public fun readCharacteristic (Landroid/bluetooth/BluetoothGattCharacteristic;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun readRemoteRssi (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun requestMtu (ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun setCharacteristicNotification (Landroid/bluetooth/BluetoothGattCharacteristic;Z)Z
+	public fun toString ()Ljava/lang/String;
+	public fun writeCharacteristic (Landroid/bluetooth/BluetoothGattCharacteristic;[BILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun writeDescriptor (Landroid/bluetooth/BluetoothGattDescriptor;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/juul/able/gatt/EventsKt {
+	public static final fun isSuccess (Lcom/juul/able/gatt/HasGattStatus;)Z
+}
+
+public abstract interface class com/juul/able/gatt/Gatt : com/juul/able/gatt/GattConnection, com/juul/able/gatt/GattIo {
+}
+
+public abstract interface class com/juul/able/gatt/GattConnection {
+	public abstract fun disconnect (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getOnConnectionStateChange ()Lkotlinx/coroutines/flow/Flow;
+}
+
+public final class com/juul/able/gatt/GattErrorStatus : java/io/IOException {
+	public final fun getEvent ()Lcom/juul/able/gatt/OnConnectionStateChange;
+}
+
+public abstract interface class com/juul/able/gatt/GattIo {
+	public abstract fun discoverServices (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getOnCharacteristicChanged ()Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getService (Ljava/util/UUID;)Landroid/bluetooth/BluetoothGattService;
+	public abstract fun getServices ()Ljava/util/List;
+	public abstract fun readCharacteristic (Landroid/bluetooth/BluetoothGattCharacteristic;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun readRemoteRssi (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun requestMtu (ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun setCharacteristicNotification (Landroid/bluetooth/BluetoothGattCharacteristic;Z)Z
+	public abstract fun writeCharacteristic (Landroid/bluetooth/BluetoothGattCharacteristic;[BILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun writeDescriptor (Landroid/bluetooth/BluetoothGattDescriptor;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/juul/able/gatt/GattIoKt {
+	public static final fun writeCharacteristic (Lcom/juul/able/gatt/GattIo;Landroid/bluetooth/BluetoothGattCharacteristic;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/juul/able/gatt/HasGattStatus {
+	public abstract fun getStatus ()I
+}
+
+public final class com/juul/able/gatt/OnCharacteristicChanged {
+	public fun <init> (Landroid/bluetooth/BluetoothGattCharacteristic;[B)V
+	public final fun component1 ()Landroid/bluetooth/BluetoothGattCharacteristic;
+	public final fun component2 ()[B
+	public final fun copy (Landroid/bluetooth/BluetoothGattCharacteristic;[B)Lcom/juul/able/gatt/OnCharacteristicChanged;
+	public static synthetic fun copy$default (Lcom/juul/able/gatt/OnCharacteristicChanged;Landroid/bluetooth/BluetoothGattCharacteristic;[BILjava/lang/Object;)Lcom/juul/able/gatt/OnCharacteristicChanged;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCharacteristic ()Landroid/bluetooth/BluetoothGattCharacteristic;
+	public final fun getValue ()[B
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/gatt/OnCharacteristicRead : com/juul/able/gatt/HasGattStatus {
+	public fun <init> (Landroid/bluetooth/BluetoothGattCharacteristic;[BI)V
+	public final fun component1 ()Landroid/bluetooth/BluetoothGattCharacteristic;
+	public final fun component2 ()[B
+	public final fun component3 ()I
+	public final fun copy (Landroid/bluetooth/BluetoothGattCharacteristic;[BI)Lcom/juul/able/gatt/OnCharacteristicRead;
+	public static synthetic fun copy$default (Lcom/juul/able/gatt/OnCharacteristicRead;Landroid/bluetooth/BluetoothGattCharacteristic;[BIILjava/lang/Object;)Lcom/juul/able/gatt/OnCharacteristicRead;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCharacteristic ()Landroid/bluetooth/BluetoothGattCharacteristic;
+	public fun getStatus ()I
+	public final fun getValue ()[B
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/gatt/OnCharacteristicWrite : com/juul/able/gatt/HasGattStatus {
+	public fun <init> (Landroid/bluetooth/BluetoothGattCharacteristic;I)V
+	public final fun component1 ()Landroid/bluetooth/BluetoothGattCharacteristic;
+	public final fun component2 ()I
+	public final fun copy (Landroid/bluetooth/BluetoothGattCharacteristic;I)Lcom/juul/able/gatt/OnCharacteristicWrite;
+	public static synthetic fun copy$default (Lcom/juul/able/gatt/OnCharacteristicWrite;Landroid/bluetooth/BluetoothGattCharacteristic;IILjava/lang/Object;)Lcom/juul/able/gatt/OnCharacteristicWrite;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCharacteristic ()Landroid/bluetooth/BluetoothGattCharacteristic;
+	public fun getStatus ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/gatt/OnConnectionStateChange : com/juul/able/gatt/HasGattStatus {
+	public fun <init> (II)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun copy (II)Lcom/juul/able/gatt/OnConnectionStateChange;
+	public static synthetic fun copy$default (Lcom/juul/able/gatt/OnConnectionStateChange;IIILjava/lang/Object;)Lcom/juul/able/gatt/OnConnectionStateChange;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNewState ()I
+	public fun getStatus ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/gatt/OnDescriptorRead : com/juul/able/gatt/HasGattStatus {
+	public fun <init> (Landroid/bluetooth/BluetoothGattDescriptor;[BI)V
+	public final fun component1 ()Landroid/bluetooth/BluetoothGattDescriptor;
+	public final fun component2 ()[B
+	public final fun component3 ()I
+	public final fun copy (Landroid/bluetooth/BluetoothGattDescriptor;[BI)Lcom/juul/able/gatt/OnDescriptorRead;
+	public static synthetic fun copy$default (Lcom/juul/able/gatt/OnDescriptorRead;Landroid/bluetooth/BluetoothGattDescriptor;[BIILjava/lang/Object;)Lcom/juul/able/gatt/OnDescriptorRead;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescriptor ()Landroid/bluetooth/BluetoothGattDescriptor;
+	public fun getStatus ()I
+	public final fun getValue ()[B
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/gatt/OnDescriptorWrite : com/juul/able/gatt/HasGattStatus {
+	public fun <init> (Landroid/bluetooth/BluetoothGattDescriptor;I)V
+	public final fun component1 ()Landroid/bluetooth/BluetoothGattDescriptor;
+	public final fun component2 ()I
+	public final fun copy (Landroid/bluetooth/BluetoothGattDescriptor;I)Lcom/juul/able/gatt/OnDescriptorWrite;
+	public static synthetic fun copy$default (Lcom/juul/able/gatt/OnDescriptorWrite;Landroid/bluetooth/BluetoothGattDescriptor;IILjava/lang/Object;)Lcom/juul/able/gatt/OnDescriptorWrite;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescriptor ()Landroid/bluetooth/BluetoothGattDescriptor;
+	public fun getStatus ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/gatt/OnMtuChanged : com/juul/able/gatt/HasGattStatus {
+	public fun <init> (II)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun copy (II)Lcom/juul/able/gatt/OnMtuChanged;
+	public static synthetic fun copy$default (Lcom/juul/able/gatt/OnMtuChanged;IIILjava/lang/Object;)Lcom/juul/able/gatt/OnMtuChanged;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMtu ()I
+	public fun getStatus ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/gatt/OnReadRemoteRssi : com/juul/able/gatt/HasGattStatus {
+	public fun <init> (II)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun copy (II)Lcom/juul/able/gatt/OnReadRemoteRssi;
+	public static synthetic fun copy$default (Lcom/juul/able/gatt/OnReadRemoteRssi;IIILjava/lang/Object;)Lcom/juul/able/gatt/OnReadRemoteRssi;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRssi ()I
+	public fun getStatus ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/gatt/OutOfOrderGattCallback : java/io/IOException {
+}
+
+public final class com/juul/able/logger/AndroidLogger : com/juul/able/logger/Logger {
+	public fun <init> ()V
+	public fun isLoggable (I)Z
+	public fun log (ILjava/lang/Throwable;Ljava/lang/String;)V
+}
+
+public abstract interface class com/juul/able/logger/Logger {
+	public abstract fun isLoggable (I)Z
+	public abstract fun log (ILjava/lang/Throwable;Ljava/lang/String;)V
+}
+
+public final class com/juul/able/logger/Logger$DefaultImpls {
+	public static synthetic fun log$default (Lcom/juul/able/logger/Logger;ILjava/lang/Throwable;Ljava/lang/String;ILjava/lang/Object;)V
+}
+
+public final class com/juul/able/logger/LoggerKt {
+	public static final field ASSERT I
+	public static final field DEBUG I
+	public static final field ERROR I
+	public static final field INFO I
+	public static final field VERBOSE I
+	public static final field WARN I
+}
+
