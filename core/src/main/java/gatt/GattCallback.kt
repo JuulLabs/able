@@ -18,7 +18,7 @@ import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
 import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
-import kotlinx.coroutines.channels.sendBlocking
+import kotlinx.coroutines.runBlocking
 
 internal class GattCallback(
     private val dispatcher: ExecutorCoroutineDispatcher
@@ -73,7 +73,11 @@ internal class GattCallback(
         val value = characteristic.value
         val event = OnCharacteristicChanged(characteristic, value)
         Able.verbose { "← $event" }
-        onCharacteristicChanged.sendBlocking(event)
+
+        if (!onCharacteristicChanged.offer(event)) {
+            Able.warn { "Subscribers are slow to consume, blocking thread for $event" }
+            runBlocking { onCharacteristicChanged.send(event) }
+        }
     }
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: GattStatus) {
