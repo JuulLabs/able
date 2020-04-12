@@ -89,6 +89,7 @@ interface Gatt {
     fun getService(uuid: UUID): BluetoothGattService?
 
     suspend fun requestMtu(mtu: Int): OnMtuChanged
+    suspend fun readRemoteRssi(): OnReadRemoteRssi
 
     suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic

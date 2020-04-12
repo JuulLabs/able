@@ -22,6 +22,7 @@ import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnCharacteristicWrite
 import com.juul.able.gatt.OnDescriptorWrite
+import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.gatt.OutOfOrderGattCallback
 import com.juul.able.gatt.writeCharacteristic
 import com.juul.able.test.gatt.FakeBluetoothGattCharacteristic as FakeCharacteristic
@@ -273,6 +274,47 @@ class CoroutinesGattTest {
             assertFailsWith<RemoteException> {
                 runBlocking {
                     gatt.writeDescriptor(createDescriptor(), byteArrayOf())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `readRemoteRssi propagates result`() {
+        createDispatcher().use { dispatcher ->
+            val callback = GattCallback(dispatcher)
+            val bluetoothGatt = mockk<BluetoothGatt> {
+                every { readRemoteRssi() } answers {
+                    callback.onReadRemoteRssi(this@mockk, 1, GATT_SUCCESS)
+                    true
+                }
+            }
+
+            val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
+            val response = runBlocking {
+                gatt.readRemoteRssi()
+            }
+
+            assertEquals(
+                expected = OnReadRemoteRssi(1, GATT_SUCCESS),
+                actual = response
+            )
+        }
+    }
+
+    @Test
+    fun `readRemoteRssi throws RemoteException when BluetoothGatt returns false`() {
+        createDispatcher().use { dispatcher ->
+            val callback = GattCallback(dispatcher)
+            val bluetoothGatt = mockk<BluetoothGatt> {
+                every { readRemoteRssi() } returns false
+            }
+
+            val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
+
+            assertFailsWith<RemoteException> {
+                runBlocking {
+                    gatt.readRemoteRssi()
                 }
             }
         }

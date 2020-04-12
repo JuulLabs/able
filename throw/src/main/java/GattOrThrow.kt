@@ -23,6 +23,18 @@ suspend fun Gatt.discoverServicesOrThrow() {
 }
 
 /**
+ * @throws [IllegalStateException] if [Gatt.readRemoteRssi] call does not return [GATT_SUCCESS].
+ */
+suspend fun Gatt.readRemoteRssiOrThrow(): Int {
+    return readRemoteRssi()
+        .also { (_, status) ->
+            check(status == GATT_SUCCESS) {
+                "Service discovery failed with gatt status $status."
+            }
+        }.rssi
+}
+
+/**
  * @throws [IllegalStateException] if [Gatt.readCharacteristic] call does not return [GATT_SUCCESS].
  */
 suspend fun Gatt.readCharacteristicOrThrow(

@@ -18,6 +18,22 @@ data class OnConnectionStateChange(
     }
 }
 
+data class OnMtuChanged(
+    val mtu: Int,
+    val status: GattStatus
+) {
+    override fun toString(): String =
+        "OnMtuChanged(mtu=$mtu, status=${status.asGattStatusString()})"
+}
+
+data class OnReadRemoteRssi(
+    val rssi: Int,
+    val status: GattStatus
+) {
+    override fun toString(): String =
+        "OnReadRemoteRssi(rssi=$rssi, status=${status.asGattStatusString()})"
+}
+
 data class OnCharacteristicRead(
     val characteristic: BluetoothGattCharacteristic,
     val value: ByteArray,
@@ -119,9 +135,4 @@ data class OnDescriptorWrite(
 ) {
     override fun toString(): String =
         "OnDescriptorWrite(uuid=${descriptor.uuid}, status=${status.asGattStatusString()})"
-}
-
-data class OnMtuChanged(val mtu: Int, val status: GattStatus) {
-    override fun toString(): String =
-        "OnMtuChanged(mtu=$mtu, status=${status.asGattStatusString()})"
 }

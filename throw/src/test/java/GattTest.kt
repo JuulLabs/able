@@ -14,8 +14,10 @@ import com.juul.able.gatt.Gatt
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnCharacteristicWrite
 import com.juul.able.gatt.OnDescriptorWrite
+import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.throwable.discoverServicesOrThrow
 import com.juul.able.throwable.readCharacteristicOrThrow
+import com.juul.able.throwable.readRemoteRssiOrThrow
 import com.juul.able.throwable.setCharacteristicNotificationOrThrow
 import com.juul.able.throwable.writeCharacteristicOrThrow
 import com.juul.able.throwable.writeDescriptorOrThrow
@@ -43,6 +45,35 @@ class GattTest {
                 gatt.discoverServicesOrThrow()
             }
         }
+    }
+
+    @Test
+    fun `readRemoteRssi throws IllegalStateException for non-GATT_SUCCESS response`() {
+        val gatt = mockk<Gatt> {
+            coEvery { readRemoteRssi() } returns OnReadRemoteRssi(rssi = 0, status = GATT_FAILURE)
+        }
+
+        assertFailsWith<IllegalStateException> {
+            runBlocking {
+                gatt.readRemoteRssiOrThrow()
+            }
+        }
+    }
+
+    @Test
+    fun `readRemoteRssi returns RSSI as Int for GATT_SUCCESS response`() {
+        val gatt = mockk<Gatt> {
+            coEvery { readRemoteRssi() } returns OnReadRemoteRssi(rssi = 1, status = GATT_SUCCESS)
+        }
+
+        val result = runBlocking {
+            gatt.readRemoteRssiOrThrow()
+        }
+
+        assertEquals(
+            expected = 1,
+            actual = result
+        )
     }
 
     @Test

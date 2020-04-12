@@ -112,6 +112,15 @@ class CoroutinesGatt internal constructor(
             bluetoothGatt.requestMtu(mtu)
         }
 
+    /**
+     * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
+    override suspend fun readRemoteRssi(): OnReadRemoteRssi =
+        performBluetoothAction("readRemoteRssi") {
+            bluetoothGatt.readRemoteRssi()
+        }
+
     override fun setCharacteristicNotification(
         characteristic: BluetoothGattCharacteristic,
         enable: Boolean

@@ -11,6 +11,7 @@ import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnDescriptorRead
 import com.juul.able.gatt.OnMtuChanged
+import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.test.gatt.FakeBluetoothGattCharacteristic as FakeCharacteristic
 import com.juul.able.test.gatt.FakeBluetoothGattDescriptor as FakeDescriptor
 import java.util.UUID
@@ -104,6 +105,16 @@ class EventsTest {
 
         assertEquals(
             expected = "OnMtuChanged(mtu=512, status=GATT_SUCCESS(0))",
+            actual = event.toString()
+        )
+    }
+
+    @Test
+    fun `Verify toString of OnReadRemoteRssi`() {
+        val event = OnReadRemoteRssi(rssi = 0, status = GATT_SUCCESS)
+
+        assertEquals(
+            expected = "OnReadRemoteRssi(rssi=0, status=GATT_SUCCESS(0))",
             actual = event.toString()
         )
     }
