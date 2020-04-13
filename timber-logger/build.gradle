@@ -2,18 +2,7 @@ plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'org.jmailen.kotlinter'
-    id 'com.hiya.jacoco-android'
     id 'com.vanniktech.maven.publish'
-}
-
-jacoco {
-    toolVersion = "0.8.5"
-}
-
-jacocoAndroidUnitTestReport {
-    csv.enabled false
-    html.enabled true
-    xml.enabled true
 }
 
 mavenPublish {
@@ -31,5 +20,4 @@ android {
 dependencies {
     api project(':core')
     implementation deps.timber
-    testImplementation deps.kotlin.junit
 }

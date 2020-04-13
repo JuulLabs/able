@@ -1,4 +1,3 @@
 fixes:
-  - "com/juul/able/logger/timber::"
   - "com/juul/able/processor::"
   - "com/juul/able/throwable::"
