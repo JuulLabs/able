@@ -14,8 +14,10 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
+import android.os.RemoteException
 import com.juul.able.Able
 import java.util.UUID
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.onEach
@@ -78,26 +80,52 @@ class GattStatusFailure(
 
 interface Gatt {
 
+    @FlowPreview
     val onConnectionStateChange: Flow<OnConnectionStateChange>
+
+    @FlowPreview
     val onCharacteristicChanged: Flow<OnCharacteristicChanged>
 
+    /**
+     * @throws [RemoteException] if underlying [BluetoothGatt.discoverServices] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun discoverServices(): GattStatus
 
     val services: List<BluetoothGattService>
     fun getService(uuid: UUID): BluetoothGattService?
 
+    /**
+     * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun requestMtu(mtu: Int): OnMtuChanged
 
+    /**
+     * @throws [RemoteException] if underlying [BluetoothGatt.readCharacteristic] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
     ): OnCharacteristicRead
 
+    /**
+     * @param value applied to [characteristic] when characteristic is written.
+     * @param writeType applied to [characteristic] when characteristic is written.
+     * @throws [RemoteException] if underlying [BluetoothGatt.writeCharacteristic] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun writeCharacteristic(
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray,
         writeType: WriteType
     ): OnCharacteristicWrite
 
+    /**
+     * @param value applied to [descriptor] when descriptor is written.
+     * @throws [RemoteException] if underlying [BluetoothGatt.writeDescriptor] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun writeDescriptor(
         descriptor: BluetoothGattDescriptor,
         value: ByteArray
