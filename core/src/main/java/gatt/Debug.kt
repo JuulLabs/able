@@ -81,14 +81,6 @@ private const val GATT_CCC_CFG_ERR = 0xFD
 private const val GATT_PRC_IN_PROGRESS = 0xFE
 private const val GATT_OUT_OF_RANGE = 0xFF
 
-internal fun GattState.asGattStateString() = when (this) {
-    STATE_DISCONNECTING -> "STATE_DISCONNECTING"
-    STATE_DISCONNECTED -> "STATE_DISCONNECTED"
-    STATE_CONNECTING -> "STATE_CONNECTING"
-    STATE_CONNECTED -> "STATE_CONNECTED"
-    else -> "STATE_UNKNOWN"
-}.let { name -> "$name($this)" }
-
 internal fun GattConnectionStatus.asGattConnectionStatusString() = when (this) {
     GATT_SUCCESS -> "GATT_SUCCESS"
     GATT_CONN_L2C_FAILURE -> "GATT_CONN_L2C_FAILURE"
@@ -99,6 +91,14 @@ internal fun GattConnectionStatus.asGattConnectionStatusString() = when (this) {
     GATT_CONN_LMP_TIMEOUT -> "GATT_CONN_LMP_TIMEOUT"
     GATT_CONN_CANCEL -> "GATT_CONN_CANCEL"
     else -> "GATT_CONN_UNKNOWN"
+}.let { name -> "$name($this)" }
+
+internal fun GattConnectionState.asGattConnectionStateString() = when (this) {
+    STATE_DISCONNECTING -> "STATE_DISCONNECTING"
+    STATE_DISCONNECTED -> "STATE_DISCONNECTED"
+    STATE_CONNECTING -> "STATE_CONNECTING"
+    STATE_CONNECTED -> "STATE_CONNECTED"
+    else -> "STATE_UNKNOWN"
 }.let { name -> "$name($this)" }
 
 internal fun GattStatus.asGattStatusString() = when (this) {

@@ -9,12 +9,12 @@ import android.bluetooth.BluetoothGattDescriptor
 
 data class OnConnectionStateChange(
     val status: GattStatus,
-    val newState: GattState
+    val newState: GattConnectionState
 ) {
     override fun toString(): String {
         val connectionStatus = status.asGattConnectionStatusString()
-        val gattState = newState.asGattStateString()
-        return "OnConnectionStateChange(status=$connectionStatus, newState=$gattState)"
+        val connectionState = newState.asGattConnectionStateString()
+        return "OnConnectionStateChange(status=$connectionStatus, newState=$connectionState)"
     }
 }
 

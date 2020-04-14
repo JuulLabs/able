@@ -52,19 +52,11 @@ class CoroutinesGatt internal constructor(
         }
     }
 
-    /**
-     * @throws [RemoteException] if underlying [BluetoothGatt.discoverServices] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
-     */
     override suspend fun discoverServices(): GattStatus =
         performBluetoothAction("discoverServices") {
             bluetoothGatt.discoverServices()
         }
 
-    /**
-     * @throws [RemoteException] if underlying [BluetoothGatt.readCharacteristic] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
-     */
     override suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
     ): OnCharacteristicRead =
@@ -72,12 +64,6 @@ class CoroutinesGatt internal constructor(
             bluetoothGatt.readCharacteristic(characteristic)
         }
 
-    /**
-     * @param value applied to [characteristic] when characteristic is written.
-     * @param writeType applied to [characteristic] when characteristic is written.
-     * @throws [RemoteException] if underlying [BluetoothGatt.writeCharacteristic] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
-     */
     override suspend fun writeCharacteristic(
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray,
@@ -89,11 +75,6 @@ class CoroutinesGatt internal constructor(
             bluetoothGatt.writeCharacteristic(characteristic)
         }
 
-    /**
-     * @param value applied to [descriptor] when descriptor is written.
-     * @throws [RemoteException] if underlying [BluetoothGatt.writeDescriptor] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
-     */
     override suspend fun writeDescriptor(
         descriptor: BluetoothGattDescriptor,
         value: ByteArray
@@ -103,10 +84,6 @@ class CoroutinesGatt internal constructor(
             bluetoothGatt.writeDescriptor(descriptor)
         }
 
-    /**
-     * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
-     */
     override suspend fun requestMtu(mtu: Int): OnMtuChanged =
         performBluetoothAction("requestMtu") {
             bluetoothGatt.requestMtu(mtu)
