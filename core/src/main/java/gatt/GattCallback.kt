@@ -13,7 +13,6 @@ import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
 import com.juul.able.Able
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
@@ -24,12 +23,8 @@ internal class GattCallback(
     private val dispatcher: ExecutorCoroutineDispatcher
 ) : BluetoothGattCallback() {
 
-    @ExperimentalCoroutinesApi
     val onConnectionStateChange = BroadcastChannel<OnConnectionStateChange>(CONFLATED)
-
-    @ExperimentalCoroutinesApi
     val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
-
     val onResponse = Channel<Any>(CONFLATED)
 
     private val isClosed = AtomicBoolean()
