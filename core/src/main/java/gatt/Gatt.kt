@@ -100,6 +100,7 @@ interface Gatt {
      * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
      */
     suspend fun requestMtu(mtu: Int): OnMtuChanged
+    suspend fun readRemoteRssi(): OnReadRemoteRssi
 
     /**
      * @throws [RemoteException] if underlying [BluetoothGatt.readCharacteristic] returns `false`.

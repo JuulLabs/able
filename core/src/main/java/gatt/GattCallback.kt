@@ -114,6 +114,10 @@ internal class GattCallback(
         emitEvent(OnDescriptorWrite(descriptor, status))
     }
 
+    override fun onReadRemoteRssi(gatt: BluetoothGatt, rssi: Int, status: Int) {
+        emitEvent(OnReadRemoteRssi(rssi, status))
+    }
+
     override fun onMtuChanged(
         gatt: BluetoothGatt,
         mtu: Int,
