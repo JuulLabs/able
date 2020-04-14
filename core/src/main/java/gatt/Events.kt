@@ -9,13 +9,29 @@ import android.bluetooth.BluetoothGattDescriptor
 
 data class OnConnectionStateChange(
     val status: GattStatus,
-    val newState: GattState
+    val newState: GattConnectionState
 ) {
     override fun toString(): String {
         val connectionStatus = status.asGattConnectionStatusString()
-        val gattState = newState.asGattStateString()
-        return "OnConnectionStateChange(status=$connectionStatus, newState=$gattState)"
+        val connectionState = newState.asGattConnectionStateString()
+        return "OnConnectionStateChange(status=$connectionStatus, newState=$connectionState)"
     }
+}
+
+data class OnMtuChanged(
+    val mtu: Int,
+    val status: GattStatus
+) {
+    override fun toString(): String =
+        "OnMtuChanged(mtu=$mtu, status=${status.asGattStatusString()})"
+}
+
+data class OnReadRemoteRssi(
+    val rssi: Int,
+    val status: GattStatus
+) {
+    override fun toString(): String =
+        "OnReadRemoteRssi(rssi=$rssi, status=${status.asGattStatusString()})"
 }
 
 data class OnCharacteristicRead(
@@ -119,9 +135,4 @@ data class OnDescriptorWrite(
 ) {
     override fun toString(): String =
         "OnDescriptorWrite(uuid=${descriptor.uuid}, status=${status.asGattStatusString()})"
-}
-
-data class OnMtuChanged(val mtu: Int, val status: GattStatus) {
-    override fun toString(): String =
-        "OnMtuChanged(mtu=$mtu, status=${status.asGattStatusString()})"
 }

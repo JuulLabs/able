@@ -92,6 +92,10 @@ sealed class ConnectGattResult {
 <td><pre><code>suspend fun requestMtu(mtu: Int): OnMtuChanged</code><sup>3</sup></pre></td>
 </tr>
 <tr>
+<td><pre><code>fun readRemoteRssi(): Boolean</code></pre></td>
+<td><pre><code>suspend fun readRemoteRssi(): OnReadRemoteRssi</code><sup>3</sup></pre></td>
+</tr>
+<tr>
 <td><pre><code>fun setCharacteristicNotification(
     characteristic: BluetoothGattCharacteristic,
     enable: Boolean

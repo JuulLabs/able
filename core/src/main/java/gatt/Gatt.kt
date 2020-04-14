@@ -14,8 +14,10 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
+import android.os.RemoteException
 import com.juul.able.Able
 import java.util.UUID
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.onEach
@@ -36,6 +38,16 @@ import kotlinx.coroutines.flow.onEach
 typealias GattConnectionStatus = Int
 
 /**
+ * Represents the possible GATT states as defined in [BluetoothProfile]:
+ *
+ * - [BluetoothProfile.STATE_DISCONNECTED]
+ * - [BluetoothProfile.STATE_CONNECTING]
+ * - [BluetoothProfile.STATE_CONNECTED]
+ * - [BluetoothProfile.STATE_DISCONNECTING]
+ */
+typealias GattConnectionState = Int
+
+/**
  * Represents the possible GATT statuses as defined in [BluetoothGatt]:
  *
  * - [BluetoothGatt.GATT_SUCCESS]
@@ -52,16 +64,6 @@ typealias GattConnectionStatus = Int
 typealias GattStatus = Int
 
 /**
- * Represents the possible GATT states as defined in [BluetoothProfile]:
- *
- * - [BluetoothProfile.STATE_DISCONNECTED]
- * - [BluetoothProfile.STATE_CONNECTING]
- * - [BluetoothProfile.STATE_CONNECTED]
- * - [BluetoothProfile.STATE_DISCONNECTING]
- */
-typealias GattState = Int
-
-/**
  * Represents the possible [BluetoothGattCharacteristic] write types:
  *
  * - [BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT]
@@ -72,34 +74,59 @@ typealias WriteType = Int
 
 class ConnectionLost : Exception()
 
-class FailedToDeliverEvent(message: String) : IllegalStateException(message)
-
 class GattStatusFailure(
     val event: OnConnectionStateChange
 ) : IllegalStateException("Received $event")
 
 interface Gatt {
 
+    @FlowPreview
     val onConnectionStateChange: Flow<OnConnectionStateChange>
+
+    @FlowPreview
     val onCharacteristicChanged: Flow<OnCharacteristicChanged>
 
+    /**
+     * @throws [RemoteException] if underlying [BluetoothGatt.discoverServices] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun discoverServices(): GattStatus
 
     val services: List<BluetoothGattService>
     fun getService(uuid: UUID): BluetoothGattService?
 
+    /**
+     * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun requestMtu(mtu: Int): OnMtuChanged
+    suspend fun readRemoteRssi(): OnReadRemoteRssi
 
+    /**
+     * @throws [RemoteException] if underlying [BluetoothGatt.readCharacteristic] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
     ): OnCharacteristicRead
 
+    /**
+     * @param value applied to [characteristic] when characteristic is written.
+     * @param writeType applied to [characteristic] when characteristic is written.
+     * @throws [RemoteException] if underlying [BluetoothGatt.writeCharacteristic] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun writeCharacteristic(
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray,
         writeType: WriteType
     ): OnCharacteristicWrite
 
+    /**
+     * @param value applied to [descriptor] when descriptor is written.
+     * @throws [RemoteException] if underlying [BluetoothGatt.writeDescriptor] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun writeDescriptor(
         descriptor: BluetoothGattDescriptor,
         value: ByteArray
@@ -118,11 +145,11 @@ suspend fun Gatt.writeCharacteristic(
     value: ByteArray
 ): OnCharacteristicWrite = writeCharacteristic(characteristic, value, WRITE_TYPE_DEFAULT)
 
-internal suspend fun Gatt.suspendUntilConnectionState(state: GattState) {
-    Able.debug { "Suspending until ${state.asGattStateString()}" }
+internal suspend fun Gatt.suspendUntilConnectionState(state: GattConnectionState) {
+    Able.debug { "Suspending until ${state.asGattConnectionStateString()}" }
     onConnectionStateChange
         .onEach { event ->
-            Able.verbose { "← Received $event while waiting for ${state.asGattStateString()}" }
+            Able.verbose { "← Received $event while waiting for ${state.asGattConnectionStateString()}" }
             if (event.status != GATT_SUCCESS) throw GattStatusFailure(event)
         }
         .firstOrNull { (_, newState) -> newState == state }
@@ -136,6 +163,6 @@ internal suspend fun Gatt.suspendUntilConnectionState(state: GattState) {
             }
         }
         ?.also { (_, newState) ->
-            Able.info { "Reached ${newState.asGattStateString()}" }
+            Able.info { "Reached ${newState.asGattConnectionStateString()}" }
         }
 }

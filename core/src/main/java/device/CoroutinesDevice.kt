@@ -9,7 +9,6 @@ import android.bluetooth.BluetoothGatt.STATE_CONNECTED
 import android.content.Context
 import android.os.RemoteException
 import com.juul.able.Able
-import com.juul.able.android.connectGatt
 import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
 import com.juul.able.gatt.CoroutinesGatt
@@ -24,25 +23,6 @@ internal class CoroutinesDevice(
     private val device: BluetoothDevice
 ) : Device {
 
-    /**
-     * Establishes a connection to the [BluetoothDevice], suspending until connection is successful
-     * or error occurs.
-     *
-     * To cancel an in-flight connection attempt, the Coroutine from which this method was called
-     * can be canceled:
-     *
-     * ```
-     * fun connect(context: Context, device: BluetoothDevice) {
-     *     connectJob = async {
-     *         device.connectGatt(context)
-     *     }
-     * }
-     *
-     * fun cancelConnection() {
-     *     connectJob?.cancel() // cancels the above `connectGatt`
-     * }
-     * ```
-     */
     override suspend fun connectGatt(context: Context): ConnectGattResult {
         val dispatcher = newSingleThreadContext("$DISPATCHER_NAME@$device")
         val callback = GattCallback(dispatcher)
