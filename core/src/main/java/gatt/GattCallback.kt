@@ -49,7 +49,7 @@ internal class GattCallback(
     override fun onConnectionStateChange(
         gatt: BluetoothGatt,
         status: GattConnectionStatus,
-        newState: GattState
+        newState: GattConnectionState
     ) {
         val event = OnConnectionStateChange(status, newState)
         Able.debug { "← $event" }
@@ -73,8 +73,7 @@ internal class GattCallback(
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: GattStatus) {
         Able.verbose { "← OnServicesDiscovered(status=${status.asGattStatusString()})" }
-        onResponse.offer(status) ||
-            throw FailedToDeliverEvent("OnServicesDiscovered(status=${status.asGattStatusString()})")
+        onResponse.offer(status)
     }
 
     override fun onCharacteristicRead(
@@ -121,6 +120,6 @@ internal class GattCallback(
 
     private fun emitEvent(event: Any) {
         Able.verbose { "← $event" }
-        onResponse.offer(event) || throw FailedToDeliverEvent(event.toString())
+        onResponse.offer(event)
     }
 }
