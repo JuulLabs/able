@@ -72,8 +72,6 @@ typealias WriteType = Int
 
 class ConnectionLost : Exception()
 
-class FailedToDeliverEvent(message: String) : IllegalStateException(message)
-
 class GattStatusFailure(
     val event: OnConnectionStateChange
 ) : IllegalStateException("Received $event")
