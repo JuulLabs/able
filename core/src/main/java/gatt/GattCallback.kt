@@ -13,7 +13,6 @@ import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
 import com.juul.able.Able
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
@@ -24,12 +23,8 @@ internal class GattCallback(
     private val dispatcher: ExecutorCoroutineDispatcher
 ) : BluetoothGattCallback() {
 
-    @ExperimentalCoroutinesApi
     val onConnectionStateChange = BroadcastChannel<OnConnectionStateChange>(CONFLATED)
-
-    @ExperimentalCoroutinesApi
     val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
-
     val onResponse = Channel<Any>(CONFLATED)
 
     private val isClosed = AtomicBoolean()
@@ -54,7 +49,7 @@ internal class GattCallback(
     override fun onConnectionStateChange(
         gatt: BluetoothGatt,
         status: GattConnectionStatus,
-        newState: GattState
+        newState: GattConnectionState
     ) {
         val event = OnConnectionStateChange(status, newState)
         Able.debug { "← $event" }
@@ -82,8 +77,7 @@ internal class GattCallback(
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: GattStatus) {
         Able.verbose { "← OnServicesDiscovered(status=${status.asGattStatusString()})" }
-        onResponse.offer(status) ||
-            throw FailedToDeliverEvent("OnServicesDiscovered(status=${status.asGattStatusString()})")
+        onResponse.offer(status)
     }
 
     override fun onCharacteristicRead(
@@ -130,6 +124,6 @@ internal class GattCallback(
 
     private fun emitEvent(event: Any) {
         Able.verbose { "← $event" }
-        onResponse.offer(event) || throw FailedToDeliverEvent(event.toString())
+        onResponse.offer(event)
     }
 }
