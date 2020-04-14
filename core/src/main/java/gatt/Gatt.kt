@@ -38,6 +38,16 @@ import kotlinx.coroutines.flow.onEach
 typealias GattConnectionStatus = Int
 
 /**
+ * Represents the possible GATT states as defined in [BluetoothProfile]:
+ *
+ * - [BluetoothProfile.STATE_DISCONNECTED]
+ * - [BluetoothProfile.STATE_CONNECTING]
+ * - [BluetoothProfile.STATE_CONNECTED]
+ * - [BluetoothProfile.STATE_DISCONNECTING]
+ */
+typealias GattConnectionState = Int
+
+/**
  * Represents the possible GATT statuses as defined in [BluetoothGatt]:
  *
  * - [BluetoothGatt.GATT_SUCCESS]
@@ -54,16 +64,6 @@ typealias GattConnectionStatus = Int
 typealias GattStatus = Int
 
 /**
- * Represents the possible GATT states as defined in [BluetoothProfile]:
- *
- * - [BluetoothProfile.STATE_DISCONNECTED]
- * - [BluetoothProfile.STATE_CONNECTING]
- * - [BluetoothProfile.STATE_CONNECTED]
- * - [BluetoothProfile.STATE_DISCONNECTING]
- */
-typealias GattState = Int
-
-/**
  * Represents the possible [BluetoothGattCharacteristic] write types:
  *
  * - [BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT]
@@ -73,8 +73,6 @@ typealias GattState = Int
 typealias WriteType = Int
 
 class ConnectionLost : Exception()
-
-class FailedToDeliverEvent(message: String) : IllegalStateException(message)
 
 class GattStatusFailure(
     val event: OnConnectionStateChange
@@ -146,11 +144,11 @@ suspend fun Gatt.writeCharacteristic(
     value: ByteArray
 ): OnCharacteristicWrite = writeCharacteristic(characteristic, value, WRITE_TYPE_DEFAULT)
 
-internal suspend fun Gatt.suspendUntilConnectionState(state: GattState) {
-    Able.debug { "Suspending until ${state.asGattStateString()}" }
+internal suspend fun Gatt.suspendUntilConnectionState(state: GattConnectionState) {
+    Able.debug { "Suspending until ${state.asGattConnectionStateString()}" }
     onConnectionStateChange
         .onEach { event ->
-            Able.verbose { "← Received $event while waiting for ${state.asGattStateString()}" }
+            Able.verbose { "← Received $event while waiting for ${state.asGattConnectionStateString()}" }
             if (event.status != GATT_SUCCESS) throw GattStatusFailure(event)
         }
         .firstOrNull { (_, newState) -> newState == state }
@@ -164,6 +162,6 @@ internal suspend fun Gatt.suspendUntilConnectionState(state: GattState) {
             }
         }
         ?.also { (_, newState) ->
-            Able.info { "Reached ${newState.asGattStateString()}" }
+            Able.info { "Reached ${newState.asGattConnectionStateString()}" }
         }
 }
