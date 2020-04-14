@@ -54,7 +54,7 @@ internal class GattCallback(
     override fun onConnectionStateChange(
         gatt: BluetoothGatt,
         status: GattConnectionStatus,
-        newState: GattState
+        newState: GattConnectionState
     ) {
         val event = OnConnectionStateChange(status, newState)
         Able.debug { "← $event" }
