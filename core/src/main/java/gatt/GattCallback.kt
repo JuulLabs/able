@@ -76,8 +76,7 @@ internal class GattCallback(
     }
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: GattStatus) {
-        Able.verbose { "← OnServicesDiscovered(status=${status.asGattStatusString()})" }
-        onResponse.offer(status)
+        emitEvent(OnServicesDiscovered(status))
     }
 
     override fun onCharacteristicRead(

@@ -18,6 +18,12 @@ data class OnConnectionStateChange(
     }
 }
 
+internal data class OnServicesDiscovered(
+    val status: GattStatus
+) {
+    override fun toString() = "OnServicesDiscovered(status=${status.asGattStatusString()})"
+}
+
 data class OnMtuChanged(
     val mtu: Int,
     val status: GattStatus

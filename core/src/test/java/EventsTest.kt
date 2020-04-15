@@ -12,6 +12,7 @@ import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnDescriptorRead
 import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
+import com.juul.able.gatt.OnServicesDiscovered
 import com.juul.able.test.gatt.FakeBluetoothGattCharacteristic as FakeCharacteristic
 import com.juul.able.test.gatt.FakeBluetoothGattDescriptor as FakeDescriptor
 import java.util.UUID
@@ -22,6 +23,16 @@ import nl.jqno.equalsverifier.EqualsVerifier
 private val testUuid = "01234567-89ab-cdef-0123-456789abcdef".toUuid()
 
 class EventsTest {
+
+    @Test
+    fun `Verify toString of OnServicesDiscovered`() {
+        val event = OnServicesDiscovered(status = GATT_SUCCESS)
+
+        assertEquals(
+            expected = "OnServicesDiscovered(status=GATT_SUCCESS(0))",
+            actual = event.toString()
+        )
+    }
 
     @Test
     fun `Verify equals of OnCharacteristicRead`() {
