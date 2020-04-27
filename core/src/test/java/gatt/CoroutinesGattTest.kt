@@ -325,9 +325,7 @@ class CoroutinesGattTest {
         createDispatcher().use { dispatcher ->
             val bluetoothGatt = mockk<BluetoothGatt> {
                 every { readCharacteristic(any()) } returns false
-                every<BluetoothDevice?> { device } returns mockk {
-                    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
-                }
+                every<BluetoothDevice?> { device } returns createBluetoothDevice()
             }
             val callback = GattCallback(dispatcher)
             val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
@@ -373,9 +371,7 @@ class CoroutinesGattTest {
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
                 every { close() } returns Unit
-                every { device } returns mockk {
-                    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
-                }
+                every { device } returns createBluetoothDevice()
                 every { disconnect() } answers {
                     callback.onConnectionStateChange(this@mockk, GATT_SUCCESS, STATE_DISCONNECTING)
                     callback.onConnectionStateChange(this@mockk, GATT_SUCCESS, STATE_DISCONNECTED)
@@ -397,9 +393,7 @@ class CoroutinesGattTest {
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
                 every { close() } returns Unit
-                every { device } returns mockk {
-                    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
-                }
+                every { device } returns createBluetoothDevice()
                 every { disconnect() } answers {
                     callback.onConnectionStateChange(this@mockk, GATT_SUCCESS, STATE_DISCONNECTING)
                 }
@@ -425,11 +419,12 @@ class CoroutinesGattTest {
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
                 every { close() } returns Unit
-                every { device } returns mockk {
-                    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
-                }
+                every { device } returns createBluetoothDevice()
             }
-            val characteristic = FakeCharacteristic(testUuid, value = byteArrayOf(0xF, 0x0, 0x0, 0xD))
+            val characteristic = FakeCharacteristic(
+                testUuid,
+                value = byteArrayOf(0xF, 0x0, 0x0, 0xD)
+            )
             val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
 
             val events = runBlocking {
@@ -463,9 +458,7 @@ class CoroutinesGattTest {
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
                 every { close() } returns Unit
-                every { device } returns mockk {
-                    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
-                }
+                every { device } returns createBluetoothDevice()
             }
             val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
 
@@ -488,9 +481,7 @@ class CoroutinesGattTest {
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
                 every { close() } returns Unit
-                every { device } returns mockk {
-                    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
-                }
+                every { device } returns createBluetoothDevice()
                 every { readCharacteristic(any()) } answers {
                     callback.onConnectionStateChange(this@mockk, GATT_SUCCESS, STATE_DISCONNECTED)
                     true
@@ -520,9 +511,7 @@ class CoroutinesGattTest {
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
                 every { close() } returns Unit
-                every { device } returns mockk {
-                    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
-                }
+                every { device } returns createBluetoothDevice()
                 every { readCharacteristic(any()) } answers {
                     didReadCharacteristic.offer(Unit)
                     true
@@ -553,6 +542,10 @@ class CoroutinesGattTest {
 private val dispatcherNumber = AtomicInteger()
 private fun createDispatcher() =
     newSingleThreadContext("MockGatt${dispatcherNumber.incrementAndGet()}")
+
+private fun createBluetoothDevice(): BluetoothDevice = mockk {
+    every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
+}
 
 private fun createCharacteristic(
     uuid: UUID = testUuid,

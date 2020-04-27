@@ -89,3 +89,15 @@ suspend fun GattIo.writeDescriptorOrThrow(
             check(status == GATT_SUCCESS) { "Descriptor write failed with status $status." }
         }
 }
+
+/**
+ * @throws [IllegalStateException] if [GattIo.requestMtu] call does not return [GATT_SUCCESS].
+ */
+suspend fun GattIo.requestMtuOrThrow(
+    mtu: Int
+): Int {
+    return requestMtu(mtu)
+        .also { (_, status) ->
+            check(status == GATT_SUCCESS) { "Request MTU of $mtu failed with status $status." }
+        }.mtu
+}
