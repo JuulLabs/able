@@ -4,13 +4,20 @@
 
 package com.juul.able.gatt
 
+import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 
+interface HasGattStatus {
+    val status: GattStatus
+}
+
+val HasGattStatus.isSuccess: Boolean get() = status == GATT_SUCCESS
+
 data class OnConnectionStateChange(
-    val status: GattStatus,
+    override val status: GattStatus,
     val newState: GattConnectionState
-) {
+) : HasGattStatus {
     override fun toString(): String {
         val connectionStatus = status.asGattConnectionStatusString()
         val connectionState = newState.asGattConnectionStateString()
@@ -19,23 +26,23 @@ data class OnConnectionStateChange(
 }
 
 internal data class OnServicesDiscovered(
-    val status: GattStatus
-) {
+    override val status: GattStatus
+) : HasGattStatus {
     override fun toString() = "OnServicesDiscovered(status=${status.asGattStatusString()})"
 }
 
 data class OnMtuChanged(
     val mtu: Int,
-    val status: GattStatus
-) {
+    override val status: GattStatus
+) : HasGattStatus {
     override fun toString(): String =
         "OnMtuChanged(mtu=$mtu, status=${status.asGattStatusString()})"
 }
 
 data class OnReadRemoteRssi(
     val rssi: Int,
-    val status: GattStatus
-) {
+    override val status: GattStatus
+) : HasGattStatus {
     override fun toString(): String =
         "OnReadRemoteRssi(rssi=$rssi, status=${status.asGattStatusString()})"
 }
@@ -43,8 +50,8 @@ data class OnReadRemoteRssi(
 data class OnCharacteristicRead(
     val characteristic: BluetoothGattCharacteristic,
     val value: ByteArray,
-    val status: GattStatus
-) {
+    override val status: GattStatus
+) : HasGattStatus {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -75,8 +82,8 @@ data class OnCharacteristicRead(
 
 data class OnCharacteristicWrite(
     val characteristic: BluetoothGattCharacteristic,
-    val status: GattStatus
-) {
+    override val status: GattStatus
+) : HasGattStatus {
     override fun toString(): String =
         "OnCharacteristicWrite(uuid=${characteristic.uuid}, status=${status.asGattStatusString()})"
 }
@@ -109,8 +116,8 @@ data class OnCharacteristicChanged(
 data class OnDescriptorRead(
     val descriptor: BluetoothGattDescriptor,
     val value: ByteArray,
-    val status: GattStatus
-) {
+    override val status: GattStatus
+) : HasGattStatus {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -137,8 +144,8 @@ data class OnDescriptorRead(
 
 data class OnDescriptorWrite(
     val descriptor: BluetoothGattDescriptor,
-    val status: GattStatus
-) {
+    override val status: GattStatus
+) : HasGattStatus {
     override fun toString(): String =
         "OnDescriptorWrite(uuid=${descriptor.uuid}, status=${status.asGattStatusString()})"
 }
