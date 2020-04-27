@@ -10,9 +10,9 @@ import android.bluetooth.BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.os.RemoteException
+import java.util.UUID
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import java.util.UUID
 
 /**
  * Represents the possible GATT statuses as defined in [BluetoothGatt]:
