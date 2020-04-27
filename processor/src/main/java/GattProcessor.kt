@@ -6,18 +6,18 @@ package com.juul.able.processor
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import com.juul.able.gatt.Gatt
+import com.juul.able.gatt.GattIo
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnCharacteristicWrite
 import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.WriteType
 
-fun Gatt.withProcessors(vararg processors: Processor) = GattProcessor(this, processors)
+fun GattIo.withProcessors(vararg processors: Processor) = GattProcessor(this, processors)
 
 class GattProcessor(
-    private val gatt: Gatt,
+    private val gatt: GattIo,
     private val processors: Array<out Processor>
-) : Gatt by gatt {
+) : GattIo by gatt {
 
     override suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
