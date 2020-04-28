@@ -7,13 +7,13 @@ package com.juul.able.throwable
 import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import com.juul.able.gatt.Gatt
+import com.juul.able.gatt.GattIo
 import com.juul.able.gatt.WriteType
 
 /**
- * @throws [IllegalStateException] if [Gatt.discoverServices] call does not return [GATT_SUCCESS].
+ * @throws [IllegalStateException] if [GattIo.discoverServices] call does not return [GATT_SUCCESS].
  */
-suspend fun Gatt.discoverServicesOrThrow() {
+suspend fun GattIo.discoverServicesOrThrow() {
     discoverServices()
         .also { status ->
             check(status == GATT_SUCCESS) {
@@ -23,9 +23,9 @@ suspend fun Gatt.discoverServicesOrThrow() {
 }
 
 /**
- * @throws [IllegalStateException] if [Gatt.readRemoteRssi] call does not return [GATT_SUCCESS].
+ * @throws [IllegalStateException] if [GattIo.readRemoteRssi] call does not return [GATT_SUCCESS].
  */
-suspend fun Gatt.readRemoteRssiOrThrow(): Int {
+suspend fun GattIo.readRemoteRssiOrThrow(): Int {
     return readRemoteRssi()
         .also { (_, status) ->
             check(status == GATT_SUCCESS) {
@@ -35,9 +35,9 @@ suspend fun Gatt.readRemoteRssiOrThrow(): Int {
 }
 
 /**
- * @throws [IllegalStateException] if [Gatt.readCharacteristic] call does not return [GATT_SUCCESS].
+ * @throws [IllegalStateException] if [GattIo.readCharacteristic] call does not return [GATT_SUCCESS].
  */
-suspend fun Gatt.readCharacteristicOrThrow(
+suspend fun GattIo.readCharacteristicOrThrow(
     characteristic: BluetoothGattCharacteristic
 ): ByteArray {
     return readCharacteristic(characteristic)
@@ -49,9 +49,9 @@ suspend fun Gatt.readCharacteristicOrThrow(
 }
 
 /**
- * @throws [IllegalStateException] if [Gatt.setCharacteristicNotification] call returns `false`.
+ * @throws [IllegalStateException] if [GattIo.setCharacteristicNotification] call returns `false`.
  */
-fun Gatt.setCharacteristicNotificationOrThrow(
+fun GattIo.setCharacteristicNotificationOrThrow(
     characteristic: BluetoothGattCharacteristic,
     enable: Boolean
 ) {
@@ -62,9 +62,9 @@ fun Gatt.setCharacteristicNotificationOrThrow(
 }
 
 /**
- * @throws [IllegalStateException] if [Gatt.writeCharacteristic] call does not return [GATT_SUCCESS].
+ * @throws [IllegalStateException] if [GattIo.writeCharacteristic] call does not return [GATT_SUCCESS].
  */
-suspend fun Gatt.writeCharacteristicOrThrow(
+suspend fun GattIo.writeCharacteristicOrThrow(
     characteristic: BluetoothGattCharacteristic,
     value: ByteArray,
     writeType: WriteType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
@@ -78,9 +78,9 @@ suspend fun Gatt.writeCharacteristicOrThrow(
 }
 
 /**
- * @throws [IllegalStateException] if [Gatt.writeDescriptor] call does not return [GATT_SUCCESS].
+ * @throws [IllegalStateException] if [GattIo.writeDescriptor] call does not return [GATT_SUCCESS].
  */
-suspend fun Gatt.writeDescriptorOrThrow(
+suspend fun GattIo.writeDescriptorOrThrow(
     descriptor: BluetoothGattDescriptor,
     value: ByteArray
 ) {
