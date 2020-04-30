@@ -23,9 +23,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkStatic
-import io.mockk.verify
 import kotlinx.coroutines.CoroutineStart.LAZY
-import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -68,7 +67,14 @@ class KeepAliveGattTest {
 
         val gatt = AtomicReference<KeepAliveGatt>()
         val job = launch(start = LAZY) {
-            gatt.set(keepAliveGatt(mockk(relaxed = true), bluetoothDevice, DISCONNECT_TIMEOUT) {})
+            gatt.set(
+                keepAliveGatt(
+                    androidContext = mockk(relaxed = true),
+                    bluetoothDevice = bluetoothDevice,
+                    disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
+                    onConnectAction = {}
+                )
+            )
         }
 
         delay(500L)
@@ -101,19 +107,13 @@ class KeepAliveGattTest {
             coEvery { bluetoothDevice.connectGatt(any()) } returns ConnectGattResult.Success(gatt)
 
             coroutineScope {
-                val result = AtomicReference<KeepAliveGatt>()
-                val job = launch {
-                    result.set(keepAliveGatt(
-                        androidContext = mockk(relaxed = true),
-                        device = bluetoothDevice,
-                        disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                        onConnectAction = {}
-                    ))
-                }
-
-                val keepAliveGatt = result.awaitNonNull()
-                keepAliveGatt.state.first { it == Connected }
-                job.cancel()
+                keepAliveGatt(
+                    androidContext = mockk(relaxed = true),
+                    bluetoothDevice = bluetoothDevice,
+                    disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
+                    onConnectAction = {}
+                ).state.first { it == Connected }
+                cancel()
             }
 
             coVerify {
@@ -122,6 +122,11 @@ class KeepAliveGattTest {
         } finally {
             unmockkStatic("com.juul.able.android.BluetoothDeviceKt")
         }
+    }
+
+    @Test
+    fun `When connection drops, Gatt reconnects`() {
+
     }
 }
 
