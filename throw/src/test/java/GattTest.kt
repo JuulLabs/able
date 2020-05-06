@@ -14,10 +14,12 @@ import com.juul.able.gatt.Gatt
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnCharacteristicWrite
 import com.juul.able.gatt.OnDescriptorWrite
+import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.throwable.discoverServicesOrThrow
 import com.juul.able.throwable.readCharacteristicOrThrow
 import com.juul.able.throwable.readRemoteRssiOrThrow
+import com.juul.able.throwable.requestMtuOrThrow
 import com.juul.able.throwable.setCharacteristicNotificationOrThrow
 import com.juul.able.throwable.writeCharacteristicOrThrow
 import com.juul.able.throwable.writeDescriptorOrThrow
@@ -170,5 +172,36 @@ class GattTest {
                 gatt.writeDescriptorOrThrow(descriptor, byteArrayOf())
             }
         }
+    }
+
+    @Test
+    fun `requestMtuOrThrow throws IllegalStateException for non-GATT_SUCCESS response`() {
+        val gatt = mockk<Gatt> {
+            coEvery { requestMtu(any()) } returns OnMtuChanged(
+                mtu = 23,
+                status = GATT_FAILURE
+            )
+        }
+
+        assertFailsWith<IllegalStateException> {
+            runBlocking {
+                gatt.requestMtuOrThrow(1024)
+            }
+        }
+    }
+
+    @Test
+    fun `requestMtuOrThrow returns MTU as Int for GATT_SUCCESS response`() {
+        val gatt = mockk<Gatt> {
+            coEvery { requestMtu(any()) } returns OnMtuChanged(
+                mtu = 128,
+                status = GATT_SUCCESS
+            )
+        }
+
+        assertEquals(
+            expected = 128,
+            actual = runBlocking { gatt.requestMtuOrThrow(128) }
+        )
     }
 }
