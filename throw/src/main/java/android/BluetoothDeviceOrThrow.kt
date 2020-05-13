@@ -7,14 +7,18 @@ package com.juul.able.throwable.android
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.content.Context
+import android.os.RemoteException
 import com.juul.able.android.connectGatt
 import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
-import com.juul.able.device.ConnectionFailed
+import com.juul.able.gatt.ConnectionLost
 import com.juul.able.gatt.Gatt
+import com.juul.able.gatt.GattStatusFailure
 
 /**
- * @throws ConnectionFailed if underlying [BluetoothDevice.connectGatt] returns `null` or an error (non-[GATT_SUCCESS] status) occurs during connection process.
+ * @throws RemoteException if underlying [BluetoothDevice.connectGatt] returns `null`.
+ * @throws GattStatusFailure if non-[GATT_SUCCESS] status occurs during connection process.
+ * @throws ConnectionLost if disconnect is requested during connection process.
  */
 suspend fun BluetoothDevice.connectGattOrThrow(
     context: Context
