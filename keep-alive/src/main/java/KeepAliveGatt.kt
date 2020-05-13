@@ -22,6 +22,15 @@ import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.gatt.WriteType
+import com.juul.able.keepalive.KeepAliveGatt.Configuration
+import com.juul.able.keepalive.State.Connected
+import com.juul.able.keepalive.State.Connecting
+import com.juul.able.keepalive.State.Disconnected
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -30,7 +39,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BroadcastChannel
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
+import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.coroutineScope
@@ -42,10 +52,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
+
+typealias ConnectAction = suspend GattIo.() -> Unit
+
+class NotReady(message: String) : IllegalStateException(message)
 
 enum class State {
     Connecting,
@@ -54,52 +64,71 @@ enum class State {
     Disconnected,
 }
 
-typealias ConnectAction = suspend GattIo.() -> Unit
-
-class NotReady(message: String) : IllegalStateException(message)
-
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
     bluetoothDevice: BluetoothDevice,
-    disconnectTimeoutMillis: Long,
-    onConnectAction: ConnectAction? = null
+    configuration: Configuration
 ) = KeepAliveGatt(
     parentCoroutineContext = coroutineContext,
     androidContext = androidContext,
     bluetoothDevice = bluetoothDevice,
-    disconnectTimeoutMillis = disconnectTimeoutMillis,
-    onConnectAction = onConnectAction
+    configuration = configuration
 )
 
 class KeepAliveGatt(
     parentCoroutineContext: CoroutineContext = EmptyCoroutineContext,
     androidContext: Context,
     private val bluetoothDevice: BluetoothDevice,
-    private val disconnectTimeoutMillis: Long,
-    private val onConnectAction: ConnectAction? = null
+    configuration: Configuration
 ) : GattIo {
+
+    data class Configuration(
+        val disconnectTimeoutMillis: Long,
+        val exceptionHandler: CoroutineExceptionHandler? = null,
+        val onConnectAction: ConnectAction? = null,
+        internal val stateCapacity: Int = CONFLATED
+    )
 
     private val applicationContext = androidContext.applicationContext
 
     private val job = SupervisorJob(parentCoroutineContext[Job])
-    private val scope = CoroutineScope(parentCoroutineContext + job)
+    private val scope = CoroutineScope(
+        parentCoroutineContext + job + (configuration.exceptionHandler ?: EmptyCoroutineContext)
+    )
+
     private val isRunning = AtomicBoolean()
+
+    private val disconnectTimeoutMillis = configuration.disconnectTimeoutMillis
+    private val onConnectAction = configuration.onConnectAction
 
     @Volatile
     private var _gatt: GattIo? = null
     private val gatt: GattIo
         inline get() = _gatt ?: throw NotReady(toString())
 
-    // todo: Test that validates calling `open` multiple times has no effect.
+    private val _state = BroadcastChannel<State>(configuration.stateCapacity)
+
+    @FlowPreview
+    val state: Flow<State> = _state.asFlow()
+
+    private val _onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
+
+    // todo: Replace with `trySend` when Kotlin/kotlinx.coroutines#974 is fixed.
+    // https://github.com/Kotlin/kotlinx.coroutines/issues/974
+    private fun setState(state: State) {
+        _state.offerCatching(state)
+    }
+
     fun connect(): Boolean {
-        // todo: Throw if closed.
+        check(!job.isCancelled) { "Cannot connect, $this is closed" }
         isRunning.compareAndSet(false, true) || return false
+
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
             while (isActive) {
                 try {
                     spawnConnection()
                 } finally {
-                    _state.offerCatching(State.Disconnected)
+                    setState(Disconnected)
                 }
             }
         }
@@ -111,14 +140,20 @@ class KeepAliveGatt(
         isRunning.set(false)
     }
 
-    fun close() {
+    fun cancel() {
         job.cancel()
         _onCharacteristicChanged.cancel()
         _state.cancel()
     }
 
+    suspend fun cancelAndJoin() {
+        job.cancelAndJoin()
+        _onCharacteristicChanged.cancel()
+        _state.cancel()
+    }
+
     private suspend fun spawnConnection() {
-        _state.offer(State.Connecting)
+        setState(Connecting)
 
         val gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
             is Success -> result.gatt
@@ -135,26 +170,20 @@ class KeepAliveGatt(
                     .launchIn(this)
                 onConnectAction?.invoke(gatt)
                 _gatt = gatt
-                _state.offer(State.Connected)
+                setState(Connected)
             }
         } finally {
             _gatt = null
-            _state.offer(State.Disconnecting)
+            setState(State.Disconnecting)
             withContext(NonCancellable) {
                 withTimeoutOrNull(disconnectTimeoutMillis) {
                     gatt.disconnect()
-                } ?: Able.warn { "Timed out waiting ${disconnectTimeoutMillis}ms for disconnect" }
+                } ?: Able.warn {
+                    "Timed out waiting ${disconnectTimeoutMillis}ms for disconnect"
+                }
             }
         }
     }
-
-    private val _state = BroadcastChannel<State>(Channel.CONFLATED)
-
-    @FlowPreview
-    val state: Flow<State> = _state.asFlow()
-
-    private val _onCharacteristicChanged =
-        BroadcastChannel<OnCharacteristicChanged>(Channel.BUFFERED)
 
     @FlowPreview
     override val onCharacteristicChanged: Flow<OnCharacteristicChanged> =
@@ -189,7 +218,6 @@ class KeepAliveGatt(
 
     override suspend fun readRemoteRssi(): OnReadRemoteRssi = gatt.readRemoteRssi()
 
-    // todo: Verify that this doesn't throw after _state is closed.
     override fun toString() =
         "KeepAliveGatt(device=$bluetoothDevice, gatt=$_gatt, state=${_state.consume { poll() }})"
 }
