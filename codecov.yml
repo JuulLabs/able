@@ -1,3 +1,4 @@
 fixes:
   - "com/juul/able/processor::"
   - "com/juul/able/throwable::"
+  - "com/juul/able/keepalive::"
