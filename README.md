@@ -35,7 +35,14 @@ traditionally rely on [`BluetoothGattCallback`] calls with [suspension functions
 ```kotlin
 sealed class ConnectGattResult {
     data class Success(val gatt: Gatt) : ConnectGattResult()
-    data class Failure(val cause: Exception) : ConnectGattResult()
+
+    sealed class Failure : ConnectGattResult() {
+        /** Android's `BluetoothDevice.connectGatt` returned `null` (e.g. BLE unsupported). */
+        data class Rejected(val cause: Exception) : Failure()
+
+        /** Connection could not be established (e.g. device is out of range). */
+        data class Connection(val cause: Exception) : Failure()
+    }
 }
 ```
 

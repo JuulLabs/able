@@ -4,19 +4,29 @@
 
 package com.juul.able.device
 
+import android.bluetooth.BluetoothDevice
 import android.content.Context
 import com.juul.able.gatt.Gatt
-
-class ConnectionFailed(message: String, cause: Throwable) : IllegalStateException(message, cause)
 
 sealed class ConnectGattResult {
     data class Success(
         val gatt: Gatt
     ) : ConnectGattResult()
 
-    data class Failure(
-        val cause: Exception
-    ) : ConnectGattResult()
+    sealed class Failure : ConnectGattResult() {
+
+        abstract val cause: Exception
+
+        /** Android's [BluetoothDevice.connectGatt] returned `null` (e.g. BLE unsupported). */
+        data class Rejected(
+            override val cause: Exception
+        ) : Failure()
+
+        /** Connection could not be established (e.g. device is out of range). */
+        data class Connection(
+            override val cause: Exception
+        ) : Failure()
+    }
 }
 
 interface Device {
