@@ -37,6 +37,7 @@ sealed class ConnectGattResult {
     data class Success(val gatt: Gatt) : ConnectGattResult()
 
     sealed class Failure : ConnectGattResult() {
+
         /** Android's `BluetoothDevice.connectGatt` returned `null` (e.g. BLE unsupported). */
         data class Rejected(val cause: Exception) : Failure()
 
