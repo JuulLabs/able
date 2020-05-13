@@ -30,9 +30,12 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletionHandler
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -140,10 +143,14 @@ class KeepAliveGatt(
         isRunning.set(false)
     }
 
-    fun cancel() {
-        job.cancel()
+    private fun cancel(cause: CancellationException?) {
+        job.cancel(cause)
         _onCharacteristicChanged.cancel()
         _state.cancel()
+    }
+
+    fun cancel() {
+        cancel(null)
     }
 
     suspend fun cancelAndJoin() {
@@ -152,13 +159,23 @@ class KeepAliveGatt(
         _state.cancel()
     }
 
+    // todo: Fix `@see` documentation link when https://github.com/Kotlin/dokka/issues/80 is fixed.
+    /** @see `Job.invokeOnCompletion(CompletionHandler)` */
+    fun invokeOnCompletion(
+        handler: CompletionHandler
+    ): DisposableHandle = job.invokeOnCompletion(handler)
+
     private suspend fun spawnConnection() {
         setState(Connecting)
 
         val gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
             is Success -> result.gatt
-            is Failure -> {
-                Able.error(result.cause) { "Failed to connect to $bluetoothDevice" }
+            is Failure.Rejected -> {
+                cancel(CancellationException("Connection request was rejected", result.cause))
+                return
+            }
+            is Failure.Connection -> {
+                Able.error { "Failed to connect to device $bluetoothDevice due to ${result.cause}" }
                 return
             }
         }
