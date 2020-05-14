@@ -9,9 +9,8 @@ import android.bluetooth.BluetoothGatt.GATT_FAILURE
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.content.Context
 import com.juul.able.android.connectGatt
-import com.juul.able.device.ConnectGattResult
+import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
-import com.juul.able.device.ConnectionFailed
 import com.juul.able.gatt.Gatt
 import com.juul.able.gatt.GattStatusFailure
 import com.juul.able.gatt.OnConnectionStateChange
@@ -54,25 +53,16 @@ class BluetoothDeviceTest {
     fun `connectGattOrThrow throws result cause on failure`() {
         val context = mockk<Context>()
         val bluetoothDevice = mockk<BluetoothDevice>()
-        val event = OnConnectionStateChange(GATT_FAILURE, STATE_DISCONNECTED)
-        val cause = GattStatusFailure(event)
-        val failure = ConnectionFailed("Failed to connect to device 00:11:22:33:FF:EE", cause)
-        mockkStatic("com.juul.able.android.BluetoothDeviceKt")
-        try {
-            coEvery { bluetoothDevice.connectGatt(any()) } returns ConnectGattResult.Failure(failure)
+        val cause = GattStatusFailure(OnConnectionStateChange(GATT_FAILURE, STATE_DISCONNECTED))
 
-            val capturedCause = assertFailsWith<ConnectionFailed> {
+        mockkStatic("com.juul.able.android.BluetoothDeviceKt") {
+            coEvery { bluetoothDevice.connectGatt(any()) } returns Failure.Connection(cause)
+
+            assertFailsWith<GattStatusFailure> {
                 runBlocking {
                     bluetoothDevice.connectGattOrThrow(context)
                 }
-            }.cause!!
-
-            assertEquals(
-                expected = cause,
-                actual = capturedCause
-            )
-        } finally {
-            unmockkStatic("com.juul.able.android.BluetoothDeviceKt")
+            }
         }
     }
 }

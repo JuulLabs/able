@@ -11,10 +11,10 @@ import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_CONNECTING
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
+import android.os.RemoteException
 import com.juul.able.device.ConnectGattResult
 import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
-import com.juul.able.device.ConnectionFailed
 import com.juul.able.device.CoroutinesDevice
 import com.juul.able.gatt.ConnectionLost
 import com.juul.able.gatt.GATT_CONN_CANCEL
@@ -34,6 +34,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import org.junit.Rule
 
+private const val MAC_ADDRESS = "00:11:22:33:FF:EE"
+
 class CoroutinesDeviceTest {
 
     @get:Rule
@@ -46,7 +48,7 @@ class CoroutinesDeviceTest {
         val bluetoothDevice = mockk<BluetoothDevice> {
             bluetoothGatt = createBluetoothGatt(this@mockk)
             every { connectGatt(any(), false, capture(callbackSlot)) } returns bluetoothGatt
-            every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
+            every { this@mockk.toString() } returns MAC_ADDRESS
         }
         val device = CoroutinesDevice(bluetoothDevice)
 
@@ -59,15 +61,11 @@ class CoroutinesDeviceTest {
             callback.onConnectionStateChange(bluetoothGatt, GATT_CONN_CANCEL, STATE_CONNECTED)
         }
 
-        val failure = device.connectGatt(mockk()) as Failure
+        val failure = device.connectGatt(mockk()) as Failure.Connection
 
-        assertEquals<Class<out Exception>>(
-            expected = ConnectionFailed::class.java,
-            actual = failure.cause.javaClass
-        )
         assertEquals(
             expected = OnConnectionStateChange(GATT_CONN_CANCEL, STATE_CONNECTED),
-            actual = (failure.cause.cause as GattStatusFailure).event
+            actual = (failure.cause as GattStatusFailure).event
         )
         verify(exactly = 1) { bluetoothGatt.close() }
     }
@@ -79,7 +77,7 @@ class CoroutinesDeviceTest {
         val bluetoothDevice = mockk<BluetoothDevice> {
             bluetoothGatt = createBluetoothGatt(this@mockk)
             every { connectGatt(any(), false, capture(callbackSlot)) } returns bluetoothGatt
-            every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
+            every { this@mockk.toString() } returns MAC_ADDRESS
         }
         val device = CoroutinesDevice(bluetoothDevice)
 
@@ -108,7 +106,7 @@ class CoroutinesDeviceTest {
         val bluetoothDevice = mockk<BluetoothDevice> {
             bluetoothGatt = createBluetoothGatt(this@mockk)
             every { connectGatt(any(), false, capture(callbackSlot)) } returns bluetoothGatt
-            every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
+            every { this@mockk.toString() } returns MAC_ADDRESS
         }
         val device = CoroutinesDevice(bluetoothDevice)
 
@@ -119,15 +117,11 @@ class CoroutinesDeviceTest {
             callback.onConnectionStateChange(bluetoothGatt, GATT_SUCCESS, STATE_DISCONNECTED)
         }
 
-        val failure = device.connectGatt(mockk()) as Failure
+        val failure = device.connectGatt(mockk()) as Failure.Connection
 
-        assertEquals<Class<out Exception>>(
-            expected = ConnectionFailed::class.java,
-            actual = failure.cause.javaClass
-        )
         assertEquals<Class<out Throwable>>(
             expected = ConnectionLost::class.java,
-            actual = failure.cause.cause!!.javaClass
+            actual = failure.cause.javaClass
         )
         verify(exactly = 1) { bluetoothGatt.close() }
     }
@@ -139,7 +133,7 @@ class CoroutinesDeviceTest {
         val bluetoothDevice = mockk<BluetoothDevice> {
             bluetoothGatt = createBluetoothGatt(this@mockk)
             every { connectGatt(any(), false, capture(callbackSlot)) } returns bluetoothGatt
-            every { this@mockk.toString() } returns "00:11:22:33:FF:EE"
+            every { this@mockk.toString() } returns MAC_ADDRESS
         }
         val device = CoroutinesDevice(bluetoothDevice)
 
@@ -152,6 +146,21 @@ class CoroutinesDeviceTest {
         job.cancelAndJoin()
 
         verify(exactly = 1) { bluetoothGatt.close() }
+    }
+
+    @Test
+    fun `Null return from connectGatt results in Failure Rejected`() = runBlocking {
+        val bluetoothDevice = mockk<BluetoothDevice> {
+            every { connectGatt(any(), false, any()) } returns null
+            every { this@mockk.toString() } returns MAC_ADDRESS
+        }
+        val device = CoroutinesDevice(bluetoothDevice)
+        val failure = device.connectGatt(mockk()) as Failure.Rejected
+
+        assertEquals<Class<out Throwable>>(
+            expected = RemoteException::class.java,
+            actual = failure.cause.javaClass
+        )
     }
 }
 

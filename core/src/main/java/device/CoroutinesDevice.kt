@@ -27,7 +27,7 @@ internal class CoroutinesDevice(
         val dispatcher = newSingleThreadContext("$DISPATCHER_NAME@$device")
         val callback = GattCallback(dispatcher)
         val bluetoothGatt = device.connectGatt(context, false, callback)
-            ?: return Failure(
+            ?: return Failure.Rejected(
                 RemoteException("`BluetoothDevice.connectGatt` returned `null` for device $device")
             )
 
@@ -44,7 +44,7 @@ internal class CoroutinesDevice(
             Able.warn { "connectGatt() failed for $this" }
             callback.close(bluetoothGatt)
             dispatcher.close()
-            Failure(ConnectionFailed("Failed to connect to device $device", failure))
+            Failure.Connection(failure)
         }
     }
 
