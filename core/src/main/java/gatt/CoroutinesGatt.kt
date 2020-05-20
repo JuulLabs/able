@@ -15,6 +15,7 @@ import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -36,8 +37,15 @@ class CoroutinesGatt internal constructor(
     @FlowPreview
     override val onConnectionStateChange = callback.onConnectionStateChange.asFlow()
 
+    @Deprecated(
+        message = "Will be removed when Kotlin/kotlinx.coroutines#2034 is closed; use onCharacteristicChanged instead.",
+        replaceWith = ReplaceWith(expression = "onCharacteristicChanged")
+    )
+    override val onCharacteristicChangedChannel: BroadcastChannel<OnCharacteristicChanged>
+        get() = callback.onCharacteristicChanged
+
     @FlowPreview
-    override val onCharacteristicChanged = callback.onCharacteristicChanged.asFlow()
+    override val onCharacteristicChanged = onCharacteristicChangedChannel.asFlow()
 
     override val services: List<BluetoothGattService> get() = bluetoothGatt.services
     override fun getService(uuid: UUID): BluetoothGattService? = bluetoothGatt.getService(uuid)

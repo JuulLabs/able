@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothGattService
 import android.os.RemoteException
 import java.util.UUID
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -49,6 +50,13 @@ interface GattIo {
 
     val services: List<BluetoothGattService>
     fun getService(uuid: UUID): BluetoothGattService?
+
+    /** Will be removed when https://github.com/Kotlin/kotlinx.coroutines/issues/2034 is closed. */
+    @Deprecated(
+        message = "Will be removed when Kotlin/kotlinx.coroutines#2034 is closed; use onCharacteristicChanged instead.",
+        replaceWith = ReplaceWith(expression = "onCharacteristicChanged")
+    )
+    val onCharacteristicChangedChannel: BroadcastChannel<OnCharacteristicChanged>
 
     @FlowPreview
     val onCharacteristicChanged: Flow<OnCharacteristicChanged>
