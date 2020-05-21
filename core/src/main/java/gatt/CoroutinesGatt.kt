@@ -34,7 +34,7 @@ class CoroutinesGatt internal constructor(
 ) : Gatt {
 
     @FlowPreview
-    override val onConnectionStateChange = callback.onConnectionStateChange.asFlow()
+    override val onConnectionStateChange = callback.onConnectionStateChange
 
     @FlowPreview
     override val onCharacteristicChanged = callback.onCharacteristicChanged.asFlow()
