@@ -5,6 +5,7 @@
 package com.juul.able.gatt
 
 import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
@@ -17,13 +18,19 @@ import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
 import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.runBlocking
 
 internal class GattCallback(
     private val dispatcher: ExecutorCoroutineDispatcher
 ) : BluetoothGattCallback() {
 
-    val onConnectionStateChange = BroadcastChannel<OnConnectionStateChange>(CONFLATED)
+    private val _onConnectionStateChange = MutableStateFlow<OnConnectionStateChange?>(null)
+    val onConnectionStateChange: Flow<OnConnectionStateChange> =
+        _onConnectionStateChange.filterNotNull()
+
     val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
     val onResponse = Channel<Any>(CONFLATED)
 
@@ -38,8 +45,10 @@ internal class GattCallback(
         if (isClosed.compareAndSet(false, true)) {
             Able.verbose { "Closing GattCallback belonging to device ${gatt.device}" }
             onDisconnecting() // Duplicate call in case Android skips STATE_DISCONNECTING.
-            onConnectionStateChange.close()
             gatt.close()
+
+            _onConnectionStateChange.value =
+                OnConnectionStateChange(GATT_SUCCESS, STATE_DISCONNECTED)
 
             // todo: Remove when https://github.com/Kotlin/kotlinx.coroutines/issues/261 is fixed.
             dispatcher.close()
@@ -53,7 +62,7 @@ internal class GattCallback(
     ) {
         val event = OnConnectionStateChange(status, newState)
         Able.debug { "← $event" }
-        onConnectionStateChange.offer(event)
+        _onConnectionStateChange.value = event
 
         when (newState) {
             STATE_DISCONNECTING -> onDisconnecting()

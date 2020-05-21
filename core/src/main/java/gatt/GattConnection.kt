@@ -12,7 +12,7 @@ import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import com.juul.able.Able
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 
 /**
@@ -60,18 +60,10 @@ internal suspend fun GattConnection.suspendUntilConnectionState(state: GattConne
         .onEach { event ->
             Able.verbose { "← Received $event while waiting for ${state.asGattConnectionStateString()}" }
             if (event.status != GATT_SUCCESS) throw GattStatusFailure(event)
+            if (event.newState == STATE_DISCONNECTED && state != STATE_DISCONNECTED) throw ConnectionLost()
         }
-        .firstOrNull { (_, newState) -> newState == state }
-        .also {
-            if (it == null) { // Upstream Channel closed due to STATE_DISCONNECTED.
-                if (state == STATE_DISCONNECTED) {
-                    Able.info { "Reached (implicit) STATE_DISCONNECTED" }
-                } else {
-                    throw ConnectionLost()
-                }
-            }
-        }
-        ?.also { (_, newState) ->
+        .first { (_, newState) -> newState == state }
+        .also { (_, newState) ->
             Able.info { "Reached ${newState.asGattConnectionStateString()}" }
         }
 }
