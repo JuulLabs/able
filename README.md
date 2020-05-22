@@ -185,6 +185,7 @@ dependencies {
 
 | Package           | Functionality                                                                                           |
 |-------------------|---------------------------------------------------------------------------------------------------------|
+| [`keep-alive`]    | Provides a keep-alive GATT (which automatically reconnects when connection is lost).                    |
 | [`processor`]     | A `Processor` adds the ability to process (and optionally modify) GATT data<br/>pre-write or post-read. |
 | [`throw`]         | Adds extension functions that `throw` exceptions on failures for various BLE<br/>operations.            |
 | [`timber-logger`] | Routes **Able** logging through [Timber](https://github.com/JakeWharton/timber).                        |
@@ -219,6 +220,7 @@ limitations under the License.
 [bluetooth permissions]: https://developer.android.com/guide/topics/connectivity/bluetooth#Permissions
 [Structured Concurrency]: https://medium.com/@elizarov/structured-concurrency-722d765aa952
 [`CoroutineScope`]: https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/
+[`keep-alive`] keep-alive
 [`processor`]: processor
 [`throw`]: throw
 [`timber-logger`]: timber-logger
