@@ -21,7 +21,6 @@ import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.keepalive.KeepAliveGatt
 import com.juul.able.keepalive.NotReady
-import com.juul.able.keepalive.State
 import com.juul.able.keepalive.State.Closed
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
@@ -47,10 +46,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BroadcastChannel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
-import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.first
