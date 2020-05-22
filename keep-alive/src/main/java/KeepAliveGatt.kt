@@ -22,20 +22,15 @@ import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.gatt.WriteType
+import com.juul.able.keepalive.State.Closed
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
 import com.juul.able.keepalive.State.Disconnected
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletionHandler
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
-import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -53,16 +48,23 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 typealias ConnectAction = suspend GattIo.() -> Unit
 
 class NotReady(message: String) : IllegalStateException(message)
 
-enum class State {
-    Connecting,
-    Connected,
-    Disconnecting,
-    Disconnected,
+sealed class State {
+    object Connecting : State()
+    object Connected : State()
+    object Disconnecting : State()
+    object Disconnected : State()
+    data class Closed(val cause: Throwable?) : State()
+
+    override fun toString(): String = javaClass.simpleName
 }
 
 fun CoroutineScope.keepAliveGatt(
@@ -88,7 +90,11 @@ class KeepAliveGatt(
 
     private val applicationContext = androidContext.applicationContext
 
-    private val job = SupervisorJob(parentCoroutineContext[Job])
+    private val job = SupervisorJob(parentCoroutineContext[Job]).apply {
+        invokeOnCompletion {
+            _state.value = if (it is CancellationException) Closed(it.cause) else Closed(it)
+        }
+    }
     private val scope = CoroutineScope(parentCoroutineContext + job)
 
     private val isRunning = AtomicBoolean()
@@ -98,8 +104,26 @@ class KeepAliveGatt(
     private val gatt: GattIo
         inline get() = _gatt ?: throw NotReady(toString())
 
-    private val _state = MutableStateFlow(Disconnected)
+    private val _state = MutableStateFlow<State>(Disconnected)
 
+    /**
+     * Provides a [Flow] of the [KeepAliveGatt]'s [State].
+     *
+     * The initial [state] is [Disconnected] and will typically transition through the following
+     * [State]s after [connect] is called:
+     *
+     * ```
+     *  .--------------.  connect()  .------------.       .-----------.
+     *  | Disconnected | ----------> | Connecting | ----> | Connected |
+     *  '--------------'             '------------'       '-----------'
+     *         ^                                                |
+     *         |                                         connection drop
+     *         |                                                v
+     *         |                                        .---------------.
+     *         '----------------------------------------| Disconnecting |
+     *                                                  '---------------'
+     * ```
+     */
     @FlowPreview
     val state: Flow<State> = _state
 
@@ -139,12 +163,6 @@ class KeepAliveGatt(
         job.cancelAndJoin()
         _onCharacteristicChanged.cancel()
     }
-
-    // todo: Fix `@see` documentation link when https://github.com/Kotlin/dokka/issues/80 is fixed.
-    /** @see `Job.invokeOnCompletion(CompletionHandler)` */
-    fun invokeOnCompletion(
-        handler: CompletionHandler
-    ): DisposableHandle = job.invokeOnCompletion(handler)
 
     private suspend fun spawnConnection() {
         _state.value = Connecting

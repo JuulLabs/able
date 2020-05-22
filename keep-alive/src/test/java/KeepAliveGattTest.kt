@@ -21,6 +21,8 @@ import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.keepalive.KeepAliveGatt
 import com.juul.able.keepalive.NotReady
+import com.juul.able.keepalive.State
+import com.juul.able.keepalive.State.Closed
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
 import com.juul.able.keepalive.State.Disconnected
@@ -48,6 +50,7 @@ import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
 import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.first
@@ -238,15 +241,12 @@ class KeepAliveGattTest {
             disconnectTimeoutMillis = DISCONNECT_TIMEOUT
         )
 
-        val completion = Channel<Throwable?>(CONFLATED)
-        keepAlive.invokeOnCompletion { cause -> completion.offer(cause) }
-
         assertTrue(keepAlive.connect())
+        val closed = keepAlive.state.first { it is Closed } as Closed
 
-        val cancellation = completion.receive()
         assertEquals<Class<out Throwable>?>(
             expected = RemoteException::class.java,
-            actual = cancellation?.cause?.javaClass
+            actual = closed.cause?.javaClass
         )
 
         assertTrue(scope.isActive, "KeepAlive cancellation should not cancel parent")
@@ -422,5 +422,9 @@ class KeepAliveGattTest {
 
 private fun mockBluetoothDevice(): BluetoothDevice = mockk {
     every { this@mockk.toString() } returns MAC_ADDRESS
+
+    // Mocked as returning `null` to indicate BLE request rejected (i.e. BLE unavailable).
+    // Most tests usually use `mockkStatic` to mock `BluetoothDevice.connectGatt(Context)` extension
+    // function, so this mocked method usually isn't used.
     every { connectGatt(any(), any(), any()) } returns null
 }
