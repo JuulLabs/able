@@ -62,7 +62,7 @@ class GattClosed : Exception()
 
 suspend fun KeepAliveGatt.readCharacteristicWithRetry(
     characteristic: BluetoothGattCharacteristic,
-    retryCount: Int = Integer.MAX_VALUE
+    retryCount: Int = Int.MAX_VALUE
 ): OnCharacteristicRead {
     repeat(retryCount) {
         suspendUntilConnected()
@@ -154,9 +154,11 @@ val gatt = scope.keepAliveGatt(...)
 
 When a failure occurs during the connection sequence, `KeepAliveGatt` will disconnect/close the
 in-flight connection and reconnect. If a connection attempt results in `GattConnectResult.Rejected`,
-then the failure is considered unrecoverable and `KeepAliveGatt` will disconnect/close the in-flight
-connection and finish in a `Closed` `State`. Once a `KeepAliveGatt` is `Closed` it cannot be
-reconnected (calls to `connect` will throw `IllegalStateException`).
+then the failure is considered unrecoverable and `KeepAliveGatt` will finish in a `Closed` `State`.
+Additionally, a `ConnectionRejected` Exception is propagated to the parent [`CoroutineContext`].
+
+Once a `KeepAliveGatt` is `Closed` it **cannot** be reconnected (calls to `connect` will throw
+`IllegalStateException`); a new `KeepAliveGatt` must be created.
 
 # Setup
 

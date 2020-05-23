@@ -19,6 +19,7 @@ import com.juul.able.gatt.ConnectionLost
 import com.juul.able.gatt.Gatt
 import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnReadRemoteRssi
+import com.juul.able.keepalive.ConnectionRejected
 import com.juul.able.keepalive.KeepAliveGatt
 import com.juul.able.keepalive.NotReady
 import com.juul.able.keepalive.State.Closed
@@ -43,9 +44,11 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
@@ -224,11 +227,8 @@ class KeepAliveGattTest {
     }
 
     @Test
-    fun `Does not retry connection when connection is rejected`() = runBlocking {
-        val bluetoothDevice = mockk<BluetoothDevice> {
-            every { this@mockk.toString() } returns MAC_ADDRESS
-            every { connectGatt(any(), false, any()) } returns null
-        }
+    fun `KeepAliveGatt is Closed when connection is rejected`() = runBlocking {
+        val bluetoothDevice = mockBluetoothDevice()
 
         val scope = CoroutineScope(Job())
         val keepAlive = scope.keepAliveGatt(
@@ -240,13 +240,62 @@ class KeepAliveGattTest {
         assertTrue(keepAlive.connect())
         val closed = keepAlive.state.first { it is Closed } as Closed
 
-        assertEquals<Class<out Throwable>?>(
-            expected = RemoteException::class.java,
-            actual = closed.cause?.javaClass
+        assertThrowable<ConnectionRejected>(closed.cause)
+        assertThrowable<RemoteException>(closed.cause?.cause)
+
+        assertFalse(scope.isActive, "Failure should propagate to parent")
+        coVerify(exactly = 1) { bluetoothDevice.connectGatt(any(), false, any()) }
+    }
+
+    @Test
+    fun `KeepAliveGatt with SupervisorJob parent does not fail siblings on connection rejection`() {
+        val bluetoothDevice = mockBluetoothDevice()
+        val done = Channel<Unit>()
+
+        runBlocking {
+            launch(SupervisorJob()) {
+                val keepAlive = keepAliveGatt(
+                    androidContext = mockk(relaxed = true),
+                    bluetoothDevice = bluetoothDevice,
+                    disconnectTimeoutMillis = DISCONNECT_TIMEOUT
+                )
+
+                assertTrue(keepAlive.connect())
+                keepAlive.state.first { it is Closed }
+            }.apply {
+                invokeOnCompletion { done.offer(Unit) }
+            }
+
+            val job = launch { delay(Long.MAX_VALUE) }
+
+            done.receive() // Wait for first job to complete (fail).
+            coVerify(exactly = 1) { bluetoothDevice.connectGatt(any(), false, any()) }
+
+            // Verify sibling `launch` is still active.
+            assertTrue(job.isActive, "Launch with sibling SupervisorJob did not remain active")
+
+            job.cancelAndJoin()
+        }
+    }
+
+    @Test
+    fun `Cancelling KeepAliveGatt does not cancel parent`() = runBlocking {
+        val bluetoothDevice = mockBluetoothDevice()
+        val scope = CoroutineScope(Job())
+
+        val keepAlive = scope.keepAliveGatt(
+            androidContext = mockk(relaxed = true),
+            bluetoothDevice = bluetoothDevice,
+            disconnectTimeoutMillis = DISCONNECT_TIMEOUT
         )
+        keepAlive.cancelAndJoin()
+
+        assertFailsWith<IllegalStateException> {
+            keepAlive.connect()
+        }
 
         assertTrue(scope.isActive, "KeepAlive cancellation should not cancel parent")
-        coVerify(exactly = 1) { bluetoothDevice.connectGatt(any(), false, any()) }
+        coVerify(exactly = 0) { bluetoothDevice.connectGatt(any(), false, any()) }
     }
 
     @Test
@@ -414,6 +463,58 @@ class KeepAliveGattTest {
             actual = keepAlive.toString()
         )
     }
+
+    private class ExceptionFromConnectAction : Exception()
+
+    @Test
+    fun `An Exception thrown from 'connectAction' causes reconnect`() {
+        val bluetoothDevice = mockBluetoothDevice()
+        val gatt1 = mockk<Gatt> {
+            every { onCharacteristicChanged } returns flow { delay(Long.MAX_VALUE) }
+            coEvery { disconnect() } returns Unit
+        }
+        val gatt2 = mockk<Gatt> {
+            every { onCharacteristicChanged } returns flow { delay(Long.MAX_VALUE) }
+            coEvery { disconnect() } returns Unit
+        }
+        var thrown: Throwable? = null
+        val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+            thrown = throwable
+        }
+
+        mockkStatic(BLUETOOTH_DEVICE_CLASS) {
+            coEvery {
+                bluetoothDevice.connectGatt(any())
+            } returnsMany listOf(gatt1, gatt2).map { ConnectGattResult.Success(it) }
+
+            runBlocking(exceptionHandler) {
+                var shouldThrow = true
+                val keepAlive = keepAliveGatt(
+                    androidContext = mockk(relaxed = true),
+                    bluetoothDevice = bluetoothDevice,
+                    disconnectTimeoutMillis = DISCONNECT_TIMEOUT
+                ) {
+                    if (shouldThrow) {
+                        shouldThrow = false // Only throw on the first connection attempt.
+                        throw ExceptionFromConnectAction()
+                    }
+                }
+                assertEquals(
+                    expected = Disconnected,
+                    actual = keepAlive.state.first()
+                )
+
+                keepAlive.connect()
+                keepAlive.state.first { it == Connected } // Wait until connected.
+                keepAlive.cancelAndJoin()
+            }
+
+            assertThrowable<ExceptionFromConnectAction>(thrown)
+            coVerify(exactly = 2) { bluetoothDevice.connectGatt(any()) }
+            coVerify(exactly = 1) { gatt1.disconnect() }
+            coVerify(exactly = 1) { gatt2.disconnect() }
+        }
+    }
 }
 
 private fun mockBluetoothDevice(): BluetoothDevice = mockk {
@@ -423,4 +524,11 @@ private fun mockBluetoothDevice(): BluetoothDevice = mockk {
     // Most tests usually use `mockkStatic` to mock `BluetoothDevice.connectGatt(Context)` extension
     // function, so this mocked method usually isn't used.
     every { connectGatt(any(), any(), any()) } returns null
+}
+
+private inline fun <reified T : Throwable> assertThrowable(throwable: Throwable?) {
+    assertEquals<Class<out Throwable>?>(
+        expected = T::class.java,
+        actual = throwable?.javaClass
+    )
 }

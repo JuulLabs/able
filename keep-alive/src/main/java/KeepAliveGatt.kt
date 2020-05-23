@@ -30,7 +30,6 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -38,7 +37,6 @@ import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
@@ -50,12 +48,14 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 typealias ConnectAction = suspend GattIo.() -> Unit
 
 class NotReady(message: String) : IllegalStateException(message)
+class ConnectionRejected(cause: Throwable) : IllegalStateException(cause)
 
 sealed class State {
     object Connecting : State()
@@ -90,10 +90,8 @@ class KeepAliveGatt(
 
     private val applicationContext = androidContext.applicationContext
 
-    private val job = SupervisorJob(parentCoroutineContext[Job]).apply {
-        invokeOnCompletion {
-            _state.value = if (it is CancellationException) Closed(it.cause) else Closed(it)
-        }
+    private val job = Job(parentCoroutineContext[Job]).apply {
+        invokeOnCompletion { cause -> _state.value = Closed(cause) }
     }
     private val scope = CoroutineScope(parentCoroutineContext + job)
 
@@ -135,11 +133,7 @@ class KeepAliveGatt(
 
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
             while (isActive) {
-                try {
-                    spawnConnection()
-                } finally {
-                    _state.value = Disconnected
-                }
+                spawnConnection()
             }
         }
         return true
@@ -150,13 +144,9 @@ class KeepAliveGatt(
         isRunning.set(false)
     }
 
-    private fun cancel(cause: CancellationException?) {
-        job.cancel(cause)
-        _onCharacteristicChanged.cancel()
-    }
-
     fun cancel() {
-        cancel(null)
+        job.cancel()
+        _onCharacteristicChanged.cancel()
     }
 
     suspend fun cancelAndJoin() {
@@ -165,39 +155,45 @@ class KeepAliveGatt(
     }
 
     private suspend fun spawnConnection() {
-        _state.value = Connecting
-
-        val gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
-            is Success -> result.gatt
-            is Failure.Rejected -> {
-                cancel(CancellationException("Connection request was rejected", result.cause))
-                return
-            }
-            is Failure.Connection -> {
-                Able.error { "Failed to connect to device $bluetoothDevice due to ${result.cause}" }
-                return
-            }
-        }
-
         try {
-            coroutineScope {
-                gatt.onCharacteristicChanged
-                    .onEach(_onCharacteristicChanged::send)
-                    .launchIn(this, start = UNDISPATCHED)
-                onConnectAction?.invoke(gatt)
-                _gatt = gatt
-                _state.value = Connected
-            }
-        } finally {
-            _gatt = null
-            _state.value = State.Disconnecting
-            withContext(NonCancellable) {
-                withTimeoutOrNull(disconnectTimeoutMillis) {
-                    gatt.disconnect()
-                } ?: Able.warn {
-                    "Timed out waiting ${disconnectTimeoutMillis}ms for disconnect"
+            _state.value = Connecting
+
+            val gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
+                is Success -> result.gatt
+                is Failure.Rejected -> throw ConnectionRejected(result.cause)
+                is Failure.Connection -> {
+                    Able.error { "Failed to connect to device $bluetoothDevice due to ${result.cause}" }
+                    return
                 }
             }
+
+            supervisorScope {
+                launch {
+                    try {
+                        coroutineScope {
+                            gatt.onCharacteristicChanged
+                                .onEach(_onCharacteristicChanged::send)
+                                .launchIn(this, start = UNDISPATCHED)
+                            onConnectAction?.invoke(gatt)
+                            _gatt = gatt
+                            _state.value = Connected
+                        }
+                    } finally {
+                        _gatt = null
+                        _state.value = State.Disconnecting
+
+                        withContext(NonCancellable) {
+                            withTimeoutOrNull(disconnectTimeoutMillis) {
+                                gatt.disconnect()
+                            } ?: Able.warn {
+                                "Timed out waiting ${disconnectTimeoutMillis}ms for disconnect"
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            _state.value = Disconnected
         }
     }
 
