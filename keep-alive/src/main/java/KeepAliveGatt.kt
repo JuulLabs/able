@@ -22,7 +22,7 @@ import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.gatt.WriteType
-import com.juul.able.keepalive.State.Closed
+import com.juul.able.keepalive.State.Cancelled
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
 import com.juul.able.keepalive.State.Disconnected
@@ -37,6 +37,7 @@ import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
@@ -61,8 +62,12 @@ sealed class State {
     object Connecting : State()
     object Connected : State()
     object Disconnecting : State()
-    object Disconnected : State()
-    data class Closed(val cause: Throwable?) : State()
+    data class Disconnected(val cause: Throwable? = null) : State() {
+        override fun toString() = super.toString()
+    }
+    data class Cancelled(val cause: Throwable?) : State() {
+        override fun toString() = super.toString()
+    }
 
     override fun toString(): String = javaClass.simpleName
 }
@@ -90,19 +95,19 @@ class KeepAliveGatt(
 
     private val applicationContext = androidContext.applicationContext
 
-    private val job = Job(parentCoroutineContext[Job]).apply {
-        invokeOnCompletion { cause -> _state.value = Closed(cause) }
+    private val job = SupervisorJob(parentCoroutineContext[Job]).apply {
+        invokeOnCompletion { cause -> _state.value = Cancelled(cause) }
     }
     private val scope = CoroutineScope(parentCoroutineContext + job)
 
-    private val isRunning = AtomicBoolean()
+    internal val isRunning = AtomicBoolean()
 
     @Volatile
     private var _gatt: GattIo? = null
     private val gatt: GattIo
         inline get() = _gatt ?: throw NotReady(toString())
 
-    private val _state = MutableStateFlow<State>(Disconnected)
+    private val _state = MutableStateFlow<State>(Disconnected())
 
     /**
      * Provides a [Flow] of the [KeepAliveGatt]'s [State].
@@ -135,13 +140,12 @@ class KeepAliveGatt(
             while (isActive) {
                 spawnConnection()
             }
-        }
+        }.invokeOnCompletion { isRunning.set(false) }
         return true
     }
 
     suspend fun disconnect() {
         job.children.forEach { it.cancelAndJoin() }
-        isRunning.set(false)
     }
 
     fun cancel() {
@@ -156,7 +160,7 @@ class KeepAliveGatt(
 
     private suspend fun spawnConnection() {
         try {
-            _state.value = Connecting
+            _state.value = Connecting.also(::println)
 
             val gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
                 is Success -> result.gatt
@@ -176,11 +180,11 @@ class KeepAliveGatt(
                                 .launchIn(this, start = UNDISPATCHED)
                             onConnectAction?.invoke(gatt)
                             _gatt = gatt
-                            _state.value = Connected
+                            _state.value = Connected.also(::println)
                         }
                     } finally {
                         _gatt = null
-                        _state.value = State.Disconnecting
+                        _state.value = State.Disconnecting.also(::println)
 
                         withContext(NonCancellable) {
                             withTimeoutOrNull(disconnectTimeoutMillis) {
@@ -192,8 +196,10 @@ class KeepAliveGatt(
                     }
                 }
             }
-        } finally {
-            _state.value = Disconnected
+            _state.value = Disconnected().also(::println)
+        } catch (failure: Exception) {
+            _state.value = Disconnected(failure).also(::println)
+            throw failure
         }
     }
 

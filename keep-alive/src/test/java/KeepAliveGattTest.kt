@@ -22,7 +22,6 @@ import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.keepalive.ConnectionRejected
 import com.juul.able.keepalive.KeepAliveGatt
 import com.juul.able.keepalive.NotReady
-import com.juul.able.keepalive.State.Closed
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
 import com.juul.able.keepalive.State.Disconnected
@@ -44,7 +43,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BroadcastChannel
@@ -135,7 +133,7 @@ class KeepAliveGattTest {
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT
             )
             assertEquals(
-                expected = Disconnected,
+                expected = Disconnected(),
                 actual = keepAlive.state.first()
             )
 
@@ -227,7 +225,7 @@ class KeepAliveGattTest {
     }
 
     @Test
-    fun `KeepAliveGatt is Closed when connection is rejected`() = runBlocking {
+    fun `KeepAliveGatt settles on Disconnected when connection is rejected`() = runBlocking {
         val bluetoothDevice = mockBluetoothDevice()
 
         val scope = CoroutineScope(Job())
@@ -238,44 +236,64 @@ class KeepAliveGattTest {
         )
 
         assertTrue(keepAlive.connect())
-        val closed = keepAlive.state.first { it is Closed } as Closed
+        val closed = keepAlive.state.first { it is Disconnected } as Disconnected
 
         assertThrowable<ConnectionRejected>(closed.cause)
         assertThrowable<RemoteException>(closed.cause?.cause)
 
-        assertFalse(scope.isActive, "Failure should propagate to parent")
+        assertFalse(keepAlive.isRunning.get(), "Rejection should mark KeepAliveGatt as not running")
         coVerify(exactly = 1) { bluetoothDevice.connectGatt(any(), false, any()) }
     }
 
     @Test
-    fun `KeepAliveGatt with SupervisorJob parent does not fail siblings on connection rejection`() {
+    fun `KeepAliveGatt does not fail CoroutineContext on connection rejection`() = runBlocking {
         val bluetoothDevice = mockBluetoothDevice()
         val done = Channel<Unit>()
 
-        runBlocking {
-            launch(SupervisorJob()) {
-                val keepAlive = keepAliveGatt(
-                    androidContext = mockk(relaxed = true),
-                    bluetoothDevice = bluetoothDevice,
-                    disconnectTimeoutMillis = DISCONNECT_TIMEOUT
-                )
+        val job = launch {
+            val keepAlive = keepAliveGatt(
+                androidContext = mockk(relaxed = true),
+                bluetoothDevice = bluetoothDevice,
+                disconnectTimeoutMillis = DISCONNECT_TIMEOUT
+            )
 
-                assertTrue(keepAlive.connect())
-                keepAlive.state.first { it is Closed }
-            }.apply {
-                invokeOnCompletion { done.offer(Unit) }
-            }
-
-            val job = launch { delay(Long.MAX_VALUE) }
-
-            done.receive() // Wait for first job to complete (fail).
-            coVerify(exactly = 1) { bluetoothDevice.connectGatt(any(), false, any()) }
-
-            // Verify sibling `launch` is still active.
-            assertTrue(job.isActive, "Launch with sibling SupervisorJob did not remain active")
-
-            job.cancelAndJoin()
+            assertTrue(keepAlive.connect())
+            keepAlive.state.first { it is Disconnected && it.cause is ConnectionRejected }
+            done.offer(Unit)
         }
+
+        done.receive() // Wait for KeepAliveGatt to be in a (rejected) Disconnected state.
+        coVerify(exactly = 1) { bluetoothDevice.connectGatt(any(), false, any()) }
+
+        assertTrue(job.isActive, "Coroutine did not remain active")
+        job.cancelAndJoin()
+    }
+
+    @Test
+    fun `Can connect after connection is rejected`() = runBlocking {
+        val bluetoothDevice = mockBluetoothDevice()
+        val done = Channel<Unit>()
+
+        val job = launch {
+            val keepAlive = keepAliveGatt(
+                androidContext = mockk(relaxed = true),
+                bluetoothDevice = bluetoothDevice,
+                disconnectTimeoutMillis = DISCONNECT_TIMEOUT
+            )
+
+            assertTrue(keepAlive.connect())
+            keepAlive.state.first { it is Disconnected && it.cause is ConnectionRejected }
+
+            assertTrue(keepAlive.connect())
+            done.offer(Unit)
+        }
+
+        done.receive() // Wait for KeepAliveGatt to be in a (rejected) Disconnected state.
+
+        coVerify(exactly = 2) { bluetoothDevice.connectGatt(any(), false, any()) }
+        assertTrue(job.isActive, "Coroutine did not remain active")
+
+        job.cancelAndJoin()
     }
 
     @Test
@@ -321,7 +339,7 @@ class KeepAliveGattTest {
             connected.await()
 
             val disconnected = async(start = UNDISPATCHED) {
-                keepAlive.state.first { it == Disconnected }
+                keepAlive.state.first { it is Disconnected }
             }
             keepAlive.disconnect()
             disconnected.await()
@@ -361,7 +379,7 @@ class KeepAliveGattTest {
             ready.await()
 
             val disconnected = async(start = UNDISPATCHED) {
-                keepAlive.state.first { it == Disconnected }
+                keepAlive.state.first { it is Disconnected }
             }
             keepAlive.disconnect()
             disconnected.await()
@@ -500,7 +518,7 @@ class KeepAliveGattTest {
                     }
                 }
                 assertEquals(
-                    expected = Disconnected,
+                    expected = Disconnected(),
                     actual = keepAlive.state.first()
                 )
 
@@ -520,9 +538,9 @@ class KeepAliveGattTest {
 private fun mockBluetoothDevice(): BluetoothDevice = mockk {
     every { this@mockk.toString() } returns MAC_ADDRESS
 
-    // Mocked as returning `null` to indicate BLE request rejected (i.e. BLE unavailable).
-    // Most tests usually use `mockkStatic` to mock `BluetoothDevice.connectGatt(Context)` extension
-    // function, so this mocked method usually isn't used.
+    // Mocked as returning `null` to indicate BLE request rejected (i.e. BLE turned off).
+    // Most tests use `mockkStatic` to mock `BluetoothDevice.connectGatt(Context)` extension
+    // function (which would normally call this function), so this mocked method usually isn't used.
     every { connectGatt(any(), any(), any()) } returns null
 }
 

@@ -30,7 +30,7 @@ will attempt to establish a connection (`Connecting`). If a connection cannot be
 [Error Handling](#error-handling) for details regarding failure states).
 
 To disconnect an established connection or cancel an in-flight connection attempt, `disconnect` can
-be called (it will suspend until underlying [`BluetoothGatt`] has disconnected and closed).
+be called (it will suspend until underlying [`BluetoothGatt`] has disconnected).
 
 ### Connection State
 
@@ -40,7 +40,7 @@ be called (it will suspend until underlying [`BluetoothGatt`] has disconnected a
 - `Connecting`
 - `Connected`
 - `Disconnecting`
-- `Closed`
+- `Cancelled`
 
 The state can be monitored via the `state` [`Flow`] property:
 
@@ -87,8 +87,8 @@ private suspend fun KeepAliveGatt.suspendUntilConnected() {
 When a `KeepAliveGatt` is created, it immediately provides a [`Flow`] for incoming characteristic
 changes (`onCharacteristicChange` property). The [`Flow`] is a hot stream, so characteristic change
 events emitted before subscribers have subscribed are dropped. To prevent characteristic change
-events from being dropped, be sure to setup subscribers **before** calling `KeepAliveGatt.connect`,
-for example:
+events from being lost, be sure to setup subscribers **before** calling `KeepAliveGatt.connect`, for
+example:
 
 ```kotlin
 val gatt = KeepAliveGatt(...)
@@ -139,6 +139,14 @@ class ExampleViewModel(application: Application) : AndroidViewModel(application)
 When the parent [`CoroutineScope`] (`viewModelScope` in the above example) cancels, the
 `KeepAliveGatt` automatically disconnects. You may _optionally_ manually `disconnect`.
 
+If `KeepAliveGatt` is not configured with a parent [`CoroutineContext`] (e.g. via
+`parentCoroutineContext` constructor argument or `CoroutineScope.keepAliveGatt` extension function)
+then it should be cancelled when no longer needed using the `cancel` or `cancelAndJoin` function.
+
+When it a `KeepAliveGatt` is cancelled, it will end in a `Cancelled` `State`. Once a `KeepAliveGatt`
+is `Cancelled` it **cannot** be reconnected (calls to `connect` will throw `IllegalStateException`);
+a new `KeepAliveGatt` must be created.
+
 ## Error Handling
 
 When connection failures occur, the corresponding `Exception`s are propagated to `KeepAliveGatt`'s
@@ -152,13 +160,12 @@ val scope = CoroutineScope(Job() + exceptionHandler)
 val gatt = scope.keepAliveGatt(...)
 ```
 
-When a failure occurs during the connection sequence, `KeepAliveGatt` will disconnect/close the
-in-flight connection and reconnect. If a connection attempt results in `GattConnectResult.Rejected`,
-then the failure is considered unrecoverable and `KeepAliveGatt` will finish in a `Closed` `State`.
-Additionally, a `ConnectionRejected` Exception is propagated to the parent [`CoroutineContext`].
+When a failure occurs during the connection sequence, `KeepAliveGatt` will disconnect the in-flight
+connection and reconnect. If a connection attempt results in `GattConnectResult.Rejected`, then the
+failure is considered unrecoverable (e.g. BLE is off) and `KeepAliveGatt` will settle on
+`Disconnected` `State`. Additionally, a `ConnectionRejected` Exception is propagated to the parent
+[`CoroutineContext`]. The `connect` function may be used to attempt to establish connection again.
 
-Once a `KeepAliveGatt` is `Closed` it **cannot** be reconnected (calls to `connect` will throw
-`IllegalStateException`); a new `KeepAliveGatt` must be created.
 
 # Setup
 
