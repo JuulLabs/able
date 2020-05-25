@@ -29,7 +29,6 @@ import com.juul.able.keepalive.State.Disconnected
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -85,8 +84,8 @@ fun CoroutineScope.keepAliveGatt(
     onConnectAction = onConnectAction
 )
 
-class KeepAliveGatt(
-    parentCoroutineContext: CoroutineContext = EmptyCoroutineContext,
+class KeepAliveGatt internal constructor(
+    parentCoroutineContext: CoroutineContext,
     androidContext: Context,
     private val bluetoothDevice: BluetoothDevice,
     private val disconnectTimeoutMillis: Long,
@@ -96,11 +95,14 @@ class KeepAliveGatt(
     private val applicationContext = androidContext.applicationContext
 
     private val job = SupervisorJob(parentCoroutineContext[Job]).apply {
-        invokeOnCompletion { cause -> _state.value = Cancelled(cause) }
+        invokeOnCompletion { cause ->
+            _state.value = Cancelled(cause)
+            _onCharacteristicChanged.cancel()
+        }
     }
     private val scope = CoroutineScope(parentCoroutineContext + job)
 
-    internal val isRunning = AtomicBoolean()
+    private val isRunning = AtomicBoolean()
 
     @Volatile
     private var _gatt: GattIo? = null
@@ -148,19 +150,9 @@ class KeepAliveGatt(
         job.children.forEach { it.cancelAndJoin() }
     }
 
-    fun cancel() {
-        job.cancel()
-        _onCharacteristicChanged.cancel()
-    }
-
-    suspend fun cancelAndJoin() {
-        job.cancelAndJoin()
-        _onCharacteristicChanged.cancel()
-    }
-
     private suspend fun spawnConnection() {
         try {
-            _state.value = Connecting.also(::println)
+            _state.value = Connecting
 
             val gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
                 is Success -> result.gatt
@@ -180,11 +172,11 @@ class KeepAliveGatt(
                                 .launchIn(this, start = UNDISPATCHED)
                             onConnectAction?.invoke(gatt)
                             _gatt = gatt
-                            _state.value = Connected.also(::println)
+                            _state.value = Connected
                         }
                     } finally {
                         _gatt = null
-                        _state.value = State.Disconnecting.also(::println)
+                        _state.value = State.Disconnecting
 
                         withContext(NonCancellable) {
                             withTimeoutOrNull(disconnectTimeoutMillis) {
@@ -196,9 +188,9 @@ class KeepAliveGatt(
                     }
                 }
             }
-            _state.value = Disconnected().also(::println)
+            _state.value = Disconnected()
         } catch (failure: Exception) {
-            _state.value = Disconnected(failure).also(::println)
+            _state.value = Disconnected(failure)
             throw failure
         }
     }
