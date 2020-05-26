@@ -18,7 +18,6 @@ import com.juul.able.throwable.android.connectGattOrThrow
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -32,8 +31,7 @@ class BluetoothDeviceTest {
         val gatt = mockk<Gatt>()
         val bluetoothDevice = mockk<BluetoothDevice>()
 
-        mockkStatic("com.juul.able.android.BluetoothDeviceKt")
-        try {
+        mockkStatic("com.juul.able.android.BluetoothDeviceKt") {
             coEvery { bluetoothDevice.connectGatt(any()) } returns Success(gatt)
 
             val result = runBlocking {
@@ -44,8 +42,6 @@ class BluetoothDeviceTest {
                 expected = gatt,
                 actual = result
             )
-        } finally {
-            unmockkStatic("com.juul.able.android.BluetoothDeviceKt")
         }
     }
 

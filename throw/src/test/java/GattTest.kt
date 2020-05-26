@@ -50,7 +50,7 @@ class GattTest {
     }
 
     @Test
-    fun `readRemoteRssi throws IllegalStateException for non-GATT_SUCCESS response`() {
+    fun `readRemoteRssiOrThrow throws IllegalStateException for non-GATT_SUCCESS response`() {
         val gatt = mockk<Gatt> {
             coEvery { readRemoteRssi() } returns OnReadRemoteRssi(rssi = 0, status = GATT_FAILURE)
         }
@@ -63,7 +63,7 @@ class GattTest {
     }
 
     @Test
-    fun `readRemoteRssi returns RSSI as Int for GATT_SUCCESS response`() {
+    fun `readRemoteRssiOrThrow returns RSSI as Int for GATT_SUCCESS response`() {
         val gatt = mockk<Gatt> {
             coEvery { readRemoteRssi() } returns OnReadRemoteRssi(rssi = 1, status = GATT_SUCCESS)
         }
@@ -123,7 +123,7 @@ class GattTest {
     }
 
     @Test
-    fun `setCharacteristicNotification throws IllegalStateException for false return`() {
+    fun `setCharacteristicNotificationOrThrow throws IllegalStateException for false return`() {
         val gatt = mockk<Gatt> {
             coEvery { setCharacteristicNotification(any(), any()) } returns false
         }
