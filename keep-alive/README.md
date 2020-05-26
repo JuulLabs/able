@@ -57,21 +57,21 @@ new `KeepAliveGatt` must be created.
 A `KeepAliveGatt` will start in a `Disconnected` state. When `connect` is called, `KeepAliveGatt`
 will attempt to establish a connection (`Connecting`). If the connection is rejected (e.g. BLE is
 turned off), then `KeepAliveGatt` will settle at `Disconnected` state. The `connect` function can be
-called again to re-attempt to establish a connection.
+called again to re-attempt to establish a connection:
 
 ![Connection rejected](artwork/connect-reject.png)
 
 If a connection cannot be established (e.g. BLE device out-of-range) then `KeepAliveGatt` will retry
-indefinitely.
+indefinitely:
 
 ![Connection failure](artwork/connect-failure.png)
 
-Once `Connected`, if the connection drops, then `KeepAliveGatt` will automatically reconnect.
+Once `Connected`, if the connection drops, then `KeepAliveGatt` will automatically reconnect:
 
 ![Reconnect on connection drop](artwork/connection-drop.png)
 
-To disconnect an established connection or cancel an in-flight connection attempt, `disconnect` can
-be called (it will suspend until underlying [`BluetoothGatt`] has disconnected).
+_To disconnect an established connection or cancel an in-flight connection attempt, `disconnect` can
+be called (it will suspend until underlying [`BluetoothGatt`] has disconnected)._
 
 ### Connection State
 

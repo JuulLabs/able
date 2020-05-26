@@ -118,7 +118,9 @@ class KeepAliveGatt internal constructor(
      * [State]s after [connect] is called:
      *
      * ```
-     *  .--------------.  connect()  .------------.       .-----------.
+     *                    connect()
+     *                        :
+     *  .--------------.      v       .------------.       .-----------.
      *  | Disconnected | ----------> | Connecting | ----> | Connected |
      *  '--------------'             '------------'       '-----------'
      *         ^                                                |
