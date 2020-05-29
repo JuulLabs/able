@@ -209,7 +209,7 @@ class KeepAliveGattTest {
                 bluetoothDevice.connectGatt(any())
             } answers {
                 if (++attempt >= connectionAttempts) throw EndOfTest()
-                Failure.Connection(ConnectionLost())
+                Failure.Connection(mockk<ConnectionLost>())
             }
 
             val keepAlive = scope.keepAliveGatt(

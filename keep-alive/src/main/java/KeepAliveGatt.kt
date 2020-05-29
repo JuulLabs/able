@@ -26,6 +26,7 @@ import com.juul.able.keepalive.State.Cancelled
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
 import com.juul.able.keepalive.State.Disconnected
+import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
@@ -54,8 +55,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 typealias ConnectAction = suspend GattIo.() -> Unit
 
-class NotReady(message: String) : IllegalStateException(message)
-class ConnectionRejected(cause: Throwable) : IllegalStateException(cause)
+class NotReady internal constructor(message: String) : IllegalStateException(message)
+class ConnectionRejected internal constructor(cause: Throwable) : IOException(cause)
 
 sealed class State {
     object Connecting : State()

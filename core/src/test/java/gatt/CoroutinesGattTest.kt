@@ -17,7 +17,6 @@ import android.os.RemoteException
 import com.juul.able.gatt.ConnectionLost
 import com.juul.able.gatt.CoroutinesGatt
 import com.juul.able.gatt.GattCallback
-import com.juul.able.gatt.GattResponseFailure
 import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnCharacteristicWrite
@@ -476,7 +475,7 @@ class CoroutinesGattTest {
     }
 
     @Test
-    fun `Gatt action throws GattResponseFailure if connection drops while executing request`() {
+    fun `Gatt action throws ConnectionLost if connection drops while executing request`() {
         createDispatcher().use { dispatcher ->
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
@@ -490,7 +489,7 @@ class CoroutinesGattTest {
 
             val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
             runBlocking {
-                val cause = assertFailsWith<GattResponseFailure> {
+                val cause = assertFailsWith<ConnectionLost> {
                     gatt.readCharacteristic(createCharacteristic())
                 }.cause
 
