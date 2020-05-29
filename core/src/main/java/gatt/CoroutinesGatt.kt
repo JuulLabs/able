@@ -5,6 +5,7 @@
 package com.juul.able.gatt
 
 import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
@@ -17,6 +18,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -42,7 +45,7 @@ class CoroutinesGatt internal constructor(
         try {
             Able.info { "Disconnecting $this" }
             bluetoothGatt.disconnect()
-            suspendUntilConnectionState(STATE_DISCONNECTED)
+            suspendUntilDisconnected()
         } finally {
             callback.close(bluetoothGatt)
         }
@@ -126,6 +129,25 @@ class CoroutinesGatt internal constructor(
             ?: throw OutOfOrderGattCallback(
                 "Unexpected response type ${response.javaClass.simpleName} received for $methodName"
             )
+    }
+
+    private suspend fun suspendUntilDisconnected() {
+        Able.debug { "Suspending until device ${bluetoothGatt.device} is disconnected" }
+        onConnectionStateChange
+            .onEach { event ->
+                Able.verbose {
+                    val device = bluetoothGatt.device
+                    "← Device $device received $event while waiting for disconnection"
+                }
+                if (event.status != GATT_SUCCESS) throw GattErrorStatus(event)
+            }
+            .first { (_, newState) -> newState == STATE_DISCONNECTED }
+            .also { (_, newState) ->
+                Able.info {
+                    val state = newState.asGattConnectionStateString()
+                    "Device ${bluetoothGatt.device} reached $state"
+                }
+            }
     }
 
     override fun toString(): String = "CoroutinesGatt(device=${bluetoothGatt.device})"
