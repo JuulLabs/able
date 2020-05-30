@@ -174,6 +174,10 @@ the connection when no longer needed (via `disconnect`).
 To use **Able** in your Android project, setup your `build.gradle` as follows:
 
 ```groovy
+repositories {
+    jcenter() // or mavenCentral()
+}
+
 dependencies {
     implementation "com.juul.able:core:$version"
 }
