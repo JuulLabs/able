@@ -37,6 +37,10 @@ val gatt = device
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.juul.able/processor/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.juul.able/processor)
 
 ```groovy
+repositories {
+    jcenter() // or mavenCentral()
+}
+
 dependencies {
     implementation "com.juul.able:processor:$version"
 }
