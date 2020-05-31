@@ -164,6 +164,10 @@ val gatt = scope.keepAliveGatt(...)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.juul.able/keep-alive/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.juul.able/keep-alive)
 
 ```groovy
+repositories {
+    jcenter() // or mavenCentral()
+}
+
 dependencies {
     implementation "com.juul.able:keep-alive:$version"
 }

@@ -13,6 +13,10 @@ Able.logger = TimberLogger()
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.juul.able/timber-logger/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.juul.able/timber-logger)
 
 ```groovy
+repositories {
+    jcenter() // or mavenCentral()
+}
+
 dependencies {
     implementation "com.juul.able:timber-logger:$version"
 }

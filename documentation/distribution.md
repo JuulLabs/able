@@ -1,6 +1,7 @@
 # Distribution
 
-**Able** uses [`gradle-maven-publish-plugin`] for Maven publication, which provides `installArchives` and `uploadArchives` Gradle tasks.
+**Able** uses [`gradle-maven-publish-plugin`] for Maven publication, which provides
+`installArchives` and `uploadArchives` Gradle tasks.
 
 ## Publishing to Maven Central
 
@@ -27,7 +28,7 @@ git push origin 1.0.0
 The artifacts must then be [released from staging], see the [Easy Publishing to Central Repository]
 video guide for detailed instructions.
 
-## Install to local Maven (`~/.m2`)
+## Install to local Maven
 
 ```
 ./gradlew installArchives -PVERSION_NAME=$version
@@ -39,7 +40,7 @@ To use the dependency from your local maven, add the following to your `build.gr
 
 ```groovy
 repositories {
-    maven { url "${System.env.HOME}/.m2/repository" }
+    mavenLocal()
 }
 ```
 

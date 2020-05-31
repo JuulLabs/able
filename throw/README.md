@@ -35,6 +35,10 @@ private suspend fun Gatt.disconnect(timeout: Long) {
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.juul.able/throw/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.juul.able/throw)
 
 ```groovy
+repositories {
+    jcenter() // or mavenCentral()
+}
+
 dependencies {
     implementation "com.juul.able:throw:$version"
 }

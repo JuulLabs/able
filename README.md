@@ -29,20 +29,21 @@ traditionally rely on [`BluetoothGattCallback`] calls with [suspension functions
 </tr>
 </table>
 
-<sup>1</sup> _Suspends until `STATE_CONNECTED` or non-`GATT_SUCCESS` is received, then returns
-`ConnectGattResult`:_
+<sup>1</sup> _Suspends until `STATE_CONNECTED` or non-`GATT_SUCCESS` is received, or `connectGatt`
+returns `null`, then returns `ConnectGattResult`:_
 
 ```kotlin
 sealed class ConnectGattResult {
+
     data class Success(val gatt: Gatt) : ConnectGattResult()
 
     sealed class Failure : ConnectGattResult() {
 
-        /** Android's `BluetoothDevice.connectGatt` returned `null` (e.g. BLE unsupported). */
-        data class Rejected(val cause: Exception) : Failure()
-
         /** Connection could not be established (e.g. device is out of range). */
         data class Connection(val cause: Exception) : Failure()
+
+        /** Android's `BluetoothDevice.connectGatt` returned `null` (e.g. BLE off or unsupported). */
+        data class Rejected(val cause: Exception) : Failure()
     }
 }
 ```
@@ -115,7 +116,6 @@ sealed class ConnectGattResult {
 </tr>
 </table>
 
-<sup>1</sup> _Suspends until `STATE_CONNECTED` or non-`GATT_SUCCESS` is received._<br/>
 <sup>2</sup> _Suspends until `STATE_DISCONNECTED` or non-`GATT_SUCCESS` is received, then calls `close()` on underlying [`BluetoothGatt`]._<br/>
 <sup>3</sup> _Throws [`RemoteException`] if underlying [`BluetoothGatt`] call returns `false`._<br/>
 <sup>3</sup> _Throws `GattResponseFailure` if an error occurs while waiting for response (e.g. connection is lost)._<br/>
@@ -138,10 +138,9 @@ configurable (and is always `false`).
 
 ## [Structured Concurrency]
 
-When establishing a connection (e.g. via
-`BluetoothDevice.connectGatt(context: Context): ConnectGattResult` extension function), if the
-Coroutine is cancelled or the connection process fails, then the in-flight connection attempt will
-be cancelled and underlying [`BluetoothGatt`] will be closed:
+During the `connectGatt` and `disconnect` process, **Able** will ensure that connections are cleaned
+up (i.e. `close` will always be called on the underlying [`BluetoothGatt`]) in the event of failure
+or Coroutine cancellation:
 
 ```kotlin
 fun connect(context: Context, device: BluetoothDevice) {
@@ -162,8 +161,9 @@ Note that in the above example, if the BLE connection takes less than 1 second, 
 **established** connection will **not** be cancelled and `result` will be
 `ConnectGattResult.Success`.
 
-If `BluetoothDevice.connectGatt(context: Context): ConnectGattResult` returns
-`ConnectGattResult.Success` then it will remain connected until `disconnect()` is called.
+Once a connection is established (`connectGatt` returns `ConnectGattResult.Success`) then it will
+remain connected until `disconnect()` is called. It is the responsibility of the caller to clean up
+the connection when no longer needed (via `disconnect`).
 
 # Setup
 
@@ -174,6 +174,10 @@ If `BluetoothDevice.connectGatt(context: Context): ConnectGattResult` returns
 To use **Able** in your Android project, setup your `build.gradle` as follows:
 
 ```groovy
+repositories {
+    jcenter() // or mavenCentral()
+}
+
 dependencies {
     implementation "com.juul.able:core:$version"
 }
@@ -210,7 +214,7 @@ limitations under the License.
 
 
 [Coroutines]: https://kotlinlang.org/docs/reference/coroutines.html
-[Recipes]: documentation/RECIPES.md
+[Recipes]: documentation/recipes.md
 [`BluetoothGattCallback`]: https://developer.android.com/reference/android/bluetooth/BluetoothGattCallback.html
 [suspension functions]: https://kotlinlang.org/docs/reference/coroutines.html#suspending-functions
 [`RemoteException`]: https://developer.android.com/reference/android/os/RemoteException
