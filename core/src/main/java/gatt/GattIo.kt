@@ -94,6 +94,10 @@ interface GattIo {
         enable: Boolean
     ): Boolean
 
+    /**
+     * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
+     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     */
     suspend fun readRemoteRssi(): OnReadRemoteRssi
 }
 

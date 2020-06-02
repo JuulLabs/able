@@ -11,6 +11,7 @@ import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.os.RemoteException
 import com.juul.able.Able
+import java.io.IOException
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
@@ -20,12 +21,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-class OutOfOrderGattCallback(message: String) : IllegalStateException(message)
-
-class GattResponseFailure(
-    message: String,
-    cause: Throwable
-) : IllegalStateException(message, cause)
+class OutOfOrderGattCallback internal constructor(message: String) : IOException(message)
 
 class CoroutinesGatt internal constructor(
     private val bluetoothGatt: BluetoothGatt,
@@ -89,10 +85,6 @@ class CoroutinesGatt internal constructor(
             bluetoothGatt.requestMtu(mtu)
         }
 
-    /**
-     * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
-     */
     override suspend fun readRemoteRssi(): OnReadRemoteRssi =
         performBluetoothAction("readRemoteRssi") {
             bluetoothGatt.readRemoteRssi()
@@ -123,7 +115,7 @@ class CoroutinesGatt internal constructor(
         } catch (e: CancellationException) {
             throw CancellationException("Waiting on response for $methodName was cancelled", e)
         } catch (e: Exception) {
-            throw GattResponseFailure("Failed to receive response for $methodName", e)
+            throw ConnectionLost("Failed to receive response for $methodName", e)
         }
         Able.info { "$methodName ← $response" }
 

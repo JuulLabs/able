@@ -19,7 +19,7 @@ import com.juul.able.device.CoroutinesDevice
 import com.juul.able.gatt.ConnectionLost
 import com.juul.able.gatt.GATT_CONN_CANCEL
 import com.juul.able.gatt.GattCallback
-import com.juul.able.gatt.GattStatusFailure
+import com.juul.able.gatt.GattErrorStatus
 import com.juul.able.gatt.OnConnectionStateChange
 import com.juul.able.test.logger.ConsoleLoggerTestRule
 import io.mockk.every
@@ -65,7 +65,7 @@ class CoroutinesDeviceTest {
 
         assertEquals(
             expected = OnConnectionStateChange(GATT_CONN_CANCEL, STATE_CONNECTED),
-            actual = (failure.cause as GattStatusFailure).event
+            actual = (failure.cause as GattErrorStatus).event
         )
         verify(exactly = 1) { bluetoothGatt.close() }
     }
