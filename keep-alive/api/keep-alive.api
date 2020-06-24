@@ -1,0 +1,79 @@
+public final class com/juul/able/keepalive/BuildConfig {
+	public static final field APPLICATION_ID Ljava/lang/String;
+	public static final field BUILD_TYPE Ljava/lang/String;
+	public static final field DEBUG Z
+	public static final field FLAVOR Ljava/lang/String;
+	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
+	public static final field VERSION_CODE I
+	public static final field VERSION_NAME Ljava/lang/String;
+	public fun <init> ()V
+}
+
+public final class com/juul/able/keepalive/ConnectionRejected : java/io/IOException {
+}
+
+public final class com/juul/able/keepalive/KeepAliveGatt : com/juul/able/gatt/GattIo {
+	public final fun connect ()Z
+	public final fun disconnect (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun discoverServices (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getOnCharacteristicChanged ()Lkotlinx/coroutines/flow/Flow;
+	public fun getService (Ljava/util/UUID;)Landroid/bluetooth/BluetoothGattService;
+	public fun getServices ()Ljava/util/List;
+	public final fun getState ()Lkotlinx/coroutines/flow/Flow;
+	public fun readCharacteristic (Landroid/bluetooth/BluetoothGattCharacteristic;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun readRemoteRssi (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun requestMtu (ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun setCharacteristicNotification (Landroid/bluetooth/BluetoothGattCharacteristic;Z)Z
+	public fun toString ()Ljava/lang/String;
+	public fun writeCharacteristic (Landroid/bluetooth/BluetoothGattCharacteristic;[BILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun writeDescriptor (Landroid/bluetooth/BluetoothGattDescriptor;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/juul/able/keepalive/KeepAliveGattKt {
+	public static final fun keepAliveGatt (Lkotlinx/coroutines/CoroutineScope;Landroid/content/Context;Landroid/bluetooth/BluetoothDevice;JLkotlin/jvm/functions/Function2;)Lcom/juul/able/keepalive/KeepAliveGatt;
+	public static synthetic fun keepAliveGatt$default (Lkotlinx/coroutines/CoroutineScope;Landroid/content/Context;Landroid/bluetooth/BluetoothDevice;JLkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lcom/juul/able/keepalive/KeepAliveGatt;
+}
+
+public final class com/juul/able/keepalive/NotReady : java/lang/IllegalStateException {
+}
+
+public abstract class com/juul/able/keepalive/State {
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/keepalive/State$Cancelled : com/juul/able/keepalive/State {
+	public fun <init> (Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Throwable;)Lcom/juul/able/keepalive/State$Cancelled;
+	public static synthetic fun copy$default (Lcom/juul/able/keepalive/State$Cancelled;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/juul/able/keepalive/State$Cancelled;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/keepalive/State$Connected : com/juul/able/keepalive/State {
+	public static final field INSTANCE Lcom/juul/able/keepalive/State$Connected;
+}
+
+public final class com/juul/able/keepalive/State$Connecting : com/juul/able/keepalive/State {
+	public static final field INSTANCE Lcom/juul/able/keepalive/State$Connecting;
+}
+
+public final class com/juul/able/keepalive/State$Disconnected : com/juul/able/keepalive/State {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Throwable;)Lcom/juul/able/keepalive/State$Disconnected;
+	public static synthetic fun copy$default (Lcom/juul/able/keepalive/State$Disconnected;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/juul/able/keepalive/State$Disconnected;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/keepalive/State$Disconnecting : com/juul/able/keepalive/State {
+	public static final field INSTANCE Lcom/juul/able/keepalive/State$Disconnecting;
+}
+

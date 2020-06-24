@@ -16,6 +16,8 @@ plugins {
     // groovy.lang.GroovyRuntimeException: Cannot set the value of read-only property 'executionData'...
     // https://github.com/arturdm/jacoco-android-gradle-plugin/issues/72
     id 'com.hiya.jacoco-android' version '0.2' apply false
+
+    id 'binary-compatibility-validator' version '0.2.3'
 }
 
 subprojects {
