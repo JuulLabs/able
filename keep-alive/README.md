@@ -12,7 +12,7 @@ fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
     bluetoothDevice: BluetoothDevice,
     disconnectTimeoutMillis: Long,
-    onConnectAction: ConnectAction? = null
+    eventHandler: EventHandler? = null
 ): KeepAliveGatt
 ```
 
