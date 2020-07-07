@@ -173,8 +173,8 @@ class KeepAliveGatt internal constructor(
                             gatt.onCharacteristicChanged
                                 .onEach(_onCharacteristicChanged::send)
                                 .launchIn(this, start = UNDISPATCHED)
-                            onConnectAction?.invoke(gatt)
                             _gatt = gatt
+                            onConnectAction?.invoke(gatt)
                             _state.value = Connected
                         }
                     } finally {
