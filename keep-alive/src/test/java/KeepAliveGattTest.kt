@@ -20,11 +20,14 @@ import com.juul.able.gatt.Gatt
 import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.keepalive.ConnectionRejected
+import com.juul.able.keepalive.DisconnectInfo
 import com.juul.able.keepalive.NotReady
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
 import com.juul.able.keepalive.State.Disconnected
 import com.juul.able.keepalive.keepAliveGatt
+import com.juul.able.keepalive.onConnected
+import com.juul.able.keepalive.onDisconnected
 import com.juul.able.logger.Logger
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -55,6 +58,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
+import kotlin.test.assertNull
 
 private const val BLUETOOTH_DEVICE_CLASS = "com.juul.able.android.BluetoothDeviceKt"
 private const val MAC_ADDRESS = "00:11:22:33:FF:EE"
@@ -347,6 +351,148 @@ class KeepAliveGattTest {
             delay(1_000L) // Wait to make sure `KeepAliveGatt` doesn't make another connect attempt.
 
             coVerify(exactly = 1) { bluetoothDevice.connectGatt(any()) }
+        }
+    }
+
+    @Test
+    fun `When 'connect' occurs, the onConnect lambda is called once`() = runBlocking {
+        val bluetoothDevice = mockBluetoothDevice()
+        val gatt1 = mockk<Gatt> {
+            every { onCharacteristicChanged } returns flow { delay(Long.MAX_VALUE) }
+            coEvery { disconnect() } returns Unit
+        }
+
+        mockkStatic(BLUETOOTH_DEVICE_CLASS) {
+            var onConnectLambdaCalls = 0
+            coEvery {
+                bluetoothDevice.connectGatt(any())
+            } returns ConnectGattResult.Success(gatt1)
+
+            val job = Job()
+            val keepAlive = CoroutineScope(job).keepAliveGatt(
+                androidContext = mockk(relaxed = true),
+                bluetoothDevice = bluetoothDevice,
+                disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
+                onEventAction = {
+                    onConnected {
+                        onConnectLambdaCalls++
+                    }
+                }
+            )
+            assertEquals(
+                expected = 0,
+                actual = onConnectLambdaCalls
+            )
+
+            keepAlive.state.first { it == Connected } // Wait until connected.
+
+            assertEquals(
+                expected = 1,
+                actual = onConnectLambdaCalls
+            )
+
+            job.cancelAndJoin()
+        }
+    }
+
+    @Test
+    fun `When connection is dropped after being connected, onDisconnect's value reflects that`() =
+        runBlocking {
+            val bluetoothDevice = mockBluetoothDevice()
+            val gatt1 = mockk<Gatt> {
+                every { onCharacteristicChanged } returns flow {
+                    delay(1_000)
+                }
+                coEvery { disconnect() } returns Unit
+            }
+
+            mockkStatic(BLUETOOTH_DEVICE_CLASS) {
+                coEvery {
+                    bluetoothDevice.connectGatt(any())
+                } returns ConnectGattResult.Success(gatt1)
+
+                val job = Job()
+                var disconnectInfo: DisconnectInfo? = null
+                val keepAlive = CoroutineScope(job).keepAliveGatt(
+                    androidContext = mockk(relaxed = true),
+                    bluetoothDevice = bluetoothDevice,
+                    disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
+                    onEventAction = {
+                        onDisconnected {
+                            disconnectInfo = it
+                        }
+                    }
+                )
+
+                val ready = async(start = UNDISPATCHED) {
+                    keepAlive.state.first { it == Connected }
+                }
+                keepAlive.connect()
+                ready.await()
+
+                assertNull(disconnectInfo)
+
+                val disconnected = async(start = UNDISPATCHED) {
+                    keepAlive.state.first { it is Disconnected }
+                }
+                disconnected.await()
+
+                val connecting = async(start = UNDISPATCHED) {
+                    keepAlive.state.first { it is Connecting }
+                }
+                connecting.await()
+
+                assertEquals(
+                    expected = DisconnectInfo(true, 0),
+                    actual = disconnectInfo
+                )
+
+                job.cancelAndJoin()
+            }
+        }
+
+    @Test
+    fun `Connection failures increment, onDisconnect's connectionAttempt value`() = runBlocking {
+        val connectionAttempts = 5
+        val bluetoothDevice = mockBluetoothDevice()
+
+        val lock = Mutex(locked = true)
+        val scope = CoroutineScope(Job() + CoroutineExceptionHandler { _, cause ->
+            if (cause is EndOfTest) lock.unlock()
+        })
+        mockkStatic(BLUETOOTH_DEVICE_CLASS) {
+            var attempt = 0
+            coEvery {
+                bluetoothDevice.connectGatt(any())
+            } answers {
+                if (++attempt >= connectionAttempts) throw EndOfTest()
+                Failure.Connection(mockk<ConnectionLost>())
+            }
+
+            var disconnectInfos = mutableListOf<DisconnectInfo>()
+
+            val keepAlive = scope.keepAliveGatt(
+                androidContext = mockk(relaxed = true),
+                bluetoothDevice = bluetoothDevice,
+                disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
+                onEventAction = {
+                    onDisconnected {
+                        disconnectInfos.add(it)
+                    }
+                }
+            )
+
+            keepAlive.connect()
+
+            runBlocking {
+                lock.lock()
+                assertEquals(
+                    expected = listOf(0, 1, 2, 3),
+                    actual = disconnectInfos.map {
+                        it.connectionAttempt
+                    }.toList()
+                )
+            }
         }
     }
 

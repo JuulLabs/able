@@ -13,6 +13,7 @@ import com.juul.able.Able
 import com.juul.able.android.connectGatt
 import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
+import com.juul.able.gatt.Gatt
 import com.juul.able.gatt.GattIo
 import com.juul.able.gatt.GattStatus
 import com.juul.able.gatt.OnCharacteristicChanged
@@ -53,8 +54,6 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
-typealias ConnectAction = suspend GattIo.() -> Unit
-
 class NotReady internal constructor(message: String) : IllegalStateException(message)
 class ConnectionRejected internal constructor(cause: Throwable) : IOException(cause)
 
@@ -65,6 +64,7 @@ sealed class State {
     data class Disconnected(val cause: Throwable? = null) : State() {
         override fun toString() = super.toString()
     }
+
     data class Cancelled(val cause: Throwable?) : State() {
         override fun toString() = super.toString()
     }
@@ -72,17 +72,37 @@ sealed class State {
     override fun toString(): String = javaClass.simpleName
 }
 
+sealed class Event {
+    data class Connected(val gatt: GattIo) : Event()
+    data class Disconnected(val disconnectInfo: DisconnectInfo) : Event()
+}
+
+data class DisconnectInfo(
+    val wasConnected: Boolean,
+    val connectionAttempt: Int
+)
+
+typealias EventAction = suspend Event.() -> Unit
+
+suspend fun Event.onConnected(action: suspend (gatt: GattIo) -> Unit) {
+    if (this is Event.Connected) action.invoke(gatt)
+}
+
+suspend fun Event.onDisconnected(action: suspend (DisconnectInfo) -> Unit) {
+    if (this is Event.Disconnected) action.invoke(disconnectInfo)
+}
+
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
     bluetoothDevice: BluetoothDevice,
     disconnectTimeoutMillis: Long,
-    onConnectAction: ConnectAction? = null
+    onEventAction: EventAction? = null
 ) = KeepAliveGatt(
     parentCoroutineContext = coroutineContext,
     androidContext = androidContext,
     bluetoothDevice = bluetoothDevice,
     disconnectTimeoutMillis = disconnectTimeoutMillis,
-    onConnectAction = onConnectAction
+    onEventAction = onEventAction
 )
 
 class KeepAliveGatt internal constructor(
@@ -90,7 +110,7 @@ class KeepAliveGatt internal constructor(
     androidContext: Context,
     private val bluetoothDevice: BluetoothDevice,
     private val disconnectTimeoutMillis: Long,
-    private val onConnectAction: ConnectAction? = null
+    private val onEventAction: EventAction?
 ) : GattIo {
 
     private val applicationContext = androidContext.applicationContext
@@ -142,8 +162,16 @@ class KeepAliveGatt internal constructor(
         isRunning.compareAndSet(false, true) || return false
 
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
+            var connectionAttempts = 0
             while (isActive) {
-                spawnConnection()
+                onEventAction?.invoke(
+                    Event.Disconnected(
+                        DisconnectInfo(
+                            spawnConnection(),
+                            connectionAttempts++
+                        )
+                    )
+                )
             }
         }.invokeOnCompletion { isRunning.set(false) }
         return true
@@ -153,16 +181,20 @@ class KeepAliveGatt internal constructor(
         job.children.forEach { it.cancelAndJoin() }
     }
 
-    private suspend fun spawnConnection() {
+    /**
+     * Returns a boolean indicating whether or not this function was successful at connecting
+     * after it is completed.
+     */
+    private suspend fun spawnConnection(): Boolean {
         try {
             _state.value = Connecting
 
-            val gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
+            val gatt: Gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
                 is Success -> result.gatt
                 is Failure.Rejected -> throw ConnectionRejected(result.cause)
                 is Failure.Connection -> {
                     Able.error { "Failed to connect to device $bluetoothDevice due to ${result.cause}" }
-                    return
+                    return false
                 }
             }
 
@@ -173,8 +205,8 @@ class KeepAliveGatt internal constructor(
                             gatt.onCharacteristicChanged
                                 .onEach(_onCharacteristicChanged::send)
                                 .launchIn(this, start = UNDISPATCHED)
-                            onConnectAction?.invoke(gatt)
                             _gatt = gatt
+                            onEventAction?.invoke(Event.Connected(gatt))
                             _state.value = Connected
                         }
                     } finally {
@@ -192,6 +224,7 @@ class KeepAliveGatt internal constructor(
                 }
             }
             _state.value = Disconnected()
+            return true
         } catch (failure: Exception) {
             _state.value = Disconnected(failure)
             throw failure
