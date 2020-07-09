@@ -21,7 +21,8 @@ fun CoroutineScope.keepAliveGatt(
 | `androidContext`          | The Android `Context` for establishing Bluetooth Low-Energy connections.                                                  |
 | `bluetoothDevice`         | `BluetoothDevice` to maintain a connection with.                                                                          |
 | `disconnectTimeoutMillis` | Duration (in milliseconds) to wait for connection to gracefully spin down (after `disconnect`) before forcefully closing. |
-| `onConnectAction`         | Actions to perform upon connection. `Connected` state is propagated _after_ `onConnectAction` completes.                  |
+| `onEventAction  `         | Actions to perform upon either connection or disconnection. `onConnect` is performed after connection, and `onDisconnect` |
+|                           | is performed after a disconnection, either post connection-state or after a failure to connect.                           |
 
 For example, to create a `KeepAliveGatt` as a child of Android's `viewModelScope`:
 
