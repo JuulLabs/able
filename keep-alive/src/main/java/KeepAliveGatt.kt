@@ -64,7 +64,6 @@ sealed class State {
     data class Disconnected(val cause: Throwable? = null) : State() {
         override fun toString() = super.toString()
     }
-
     data class Cancelled(val cause: Throwable?) : State() {
         override fun toString() = super.toString()
     }
