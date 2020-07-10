@@ -81,8 +81,6 @@ data class DisconnectInfo(
     val connectionAttempt: Int
 )
 
-typealias EventAction = suspend Event.() -> Unit
-
 suspend fun Event.onConnected(action: suspend (gatt: GattIo) -> Unit) {
     if (this is Event.Connected) action.invoke(gatt)
 }
@@ -95,13 +93,13 @@ fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
     bluetoothDevice: BluetoothDevice,
     disconnectTimeoutMillis: Long,
-    onEventAction: EventAction? = null
+    onEvent: (suspend (Event) -> Unit)? = null
 ) = KeepAliveGatt(
     parentCoroutineContext = coroutineContext,
     androidContext = androidContext,
     bluetoothDevice = bluetoothDevice,
     disconnectTimeoutMillis = disconnectTimeoutMillis,
-    onEventAction = onEventAction
+    onEvent = onEvent
 )
 
 class KeepAliveGatt internal constructor(
@@ -109,7 +107,7 @@ class KeepAliveGatt internal constructor(
     androidContext: Context,
     private val bluetoothDevice: BluetoothDevice,
     private val disconnectTimeoutMillis: Long,
-    private val onEventAction: EventAction?
+    private val onEvent: (suspend (Event) -> Unit)?
 ) : GattIo {
 
     private val applicationContext = androidContext.applicationContext
@@ -161,12 +159,13 @@ class KeepAliveGatt internal constructor(
         isRunning.compareAndSet(false, true) || return false
 
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
-            var connectionAttempts = 0
+            var connectionAttempts = 1
             while (isActive) {
-                onEventAction?.invoke(
+                val successfullyConnected = spawnConnection()
+                onEvent?.invoke(
                     Event.Disconnected(
                         DisconnectInfo(
-                            spawnConnection(),
+                            successfullyConnected,
                             connectionAttempts++
                         )
                     )
@@ -205,7 +204,7 @@ class KeepAliveGatt internal constructor(
                                 .onEach(_onCharacteristicChanged::send)
                                 .launchIn(this, start = UNDISPATCHED)
                             _gatt = gatt
-                            onEventAction?.invoke(Event.Connected(gatt))
+                            onEvent?.invoke(Event.Connected(gatt))
                             _state.value = Connected
                         }
                     } finally {

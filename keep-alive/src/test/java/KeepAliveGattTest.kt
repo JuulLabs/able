@@ -355,40 +355,44 @@ class KeepAliveGattTest {
     }
 
     @Test
-    fun `When 'connect' occurs, the onConnect lambda is called once`() = runBlocking {
+    fun `When 'connect' occurs, the onEvent is called with Connected event`() = runBlocking {
         val bluetoothDevice = mockBluetoothDevice()
-        val gatt1 = mockk<Gatt> {
+        val gatt = mockk<Gatt> {
             every { onCharacteristicChanged } returns flow { delay(Long.MAX_VALUE) }
             coEvery { disconnect() } returns Unit
         }
 
         mockkStatic(BLUETOOTH_DEVICE_CLASS) {
-            var onConnectLambdaCalls = 0
+            var onConnectCalls = 0
             coEvery {
                 bluetoothDevice.connectGatt(any())
-            } returns ConnectGattResult.Success(gatt1)
+            } returns ConnectGattResult.Success(gatt)
 
             val job = Job()
             val keepAlive = CoroutineScope(job).keepAliveGatt(
                 androidContext = mockk(relaxed = true),
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                onEventAction = {
-                    onConnected {
-                        onConnectLambdaCalls++
+                onEvent = { event ->
+                    event.onConnected {
+                        onConnectCalls++
                     }
                 }
             )
             assertEquals(
                 expected = 0,
-                actual = onConnectLambdaCalls
+                actual = onConnectCalls
             )
 
-            keepAlive.state.first { it == Connected } // Wait until connected.
+            val ready = async(start = UNDISPATCHED) {
+                keepAlive.state.first { it == Connected }
+            }
+            keepAlive.connect()
+            ready.await()
 
             assertEquals(
                 expected = 1,
-                actual = onConnectLambdaCalls
+                actual = onConnectCalls
             )
 
             job.cancelAndJoin()
@@ -417,8 +421,8 @@ class KeepAliveGattTest {
                     androidContext = mockk(relaxed = true),
                     bluetoothDevice = bluetoothDevice,
                     disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                    onEventAction = {
-                        onDisconnected {
+                    onEvent = { event ->
+                        event.onDisconnected {
                             disconnectInfo = it
                         }
                     }
@@ -443,7 +447,7 @@ class KeepAliveGattTest {
                 connecting.await()
 
                 assertEquals(
-                    expected = DisconnectInfo(true, 0),
+                    expected = DisconnectInfo(true, 1),
                     actual = disconnectInfo
                 )
 
@@ -475,8 +479,8 @@ class KeepAliveGattTest {
                 androidContext = mockk(relaxed = true),
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                onEventAction = {
-                    onDisconnected {
+                onEvent = { event ->
+                    event.onDisconnected {
                         disconnectInfos.add(it)
                     }
                 }
@@ -487,7 +491,7 @@ class KeepAliveGattTest {
             runBlocking {
                 lock.lock()
                 assertEquals(
-                    expected = listOf(0, 1, 2, 3),
+                    expected = listOf(1, 2, 3, 4),
                     actual = disconnectInfos.map {
                         it.connectionAttempt
                     }.toList()
