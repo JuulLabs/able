@@ -405,7 +405,8 @@ class KeepAliveGattTest {
             val bluetoothDevice = mockBluetoothDevice()
             val gatt1 = mockk<Gatt> {
                 every { onCharacteristicChanged } returns flow {
-                    delay(1_000)
+                    delay(2_000)
+                    throw Exception("Test losing connection")
                 }
                 coEvery { disconnect() } returns Unit
             }
@@ -487,16 +488,13 @@ class KeepAliveGattTest {
             )
 
             keepAlive.connect()
-
-            runBlocking {
-                lock.lock()
-                assertEquals(
-                    expected = listOf(1, 2, 3, 4),
-                    actual = disconnectInfos.map {
-                        it.connectionAttempt
-                    }.toList()
-                )
-            }
+            lock.lock()
+            assertEquals(
+                expected = listOf(1, 2, 3, 4),
+                actual = disconnectInfos.map {
+                    it.connectionAttempt
+                }.toList()
+            )
         }
     }
 
