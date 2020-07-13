@@ -164,10 +164,7 @@ class KeepAliveGatt internal constructor(
                 val successfullyConnected = spawnConnection()
                 onEvent?.invoke(
                     Event.Disconnected(
-                        DisconnectInfo(
-                            successfullyConnected,
-                            connectionAttempts++
-                        )
+                        DisconnectInfo(successfullyConnected, connectionAttempts++)
                     )
                 )
             }

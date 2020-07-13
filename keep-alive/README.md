@@ -21,8 +21,7 @@ fun CoroutineScope.keepAliveGatt(
 | `androidContext`          | The Android `Context` for establishing Bluetooth Low-Energy connections.                                                  |
 | `bluetoothDevice`         | `BluetoothDevice` to maintain a connection with.                                                                          |
 | `disconnectTimeoutMillis` | Duration (in milliseconds) to wait for connection to gracefully spin down (after `disconnect`) before forcefully closing. |
-| `onEventAction  `         | Actions to perform upon either connection or disconnection. `onConnect` is performed after connection, and `onDisconnect` |
-|                           | is performed after a disconnection, either post connection-state or after a failure to connect.                           |
+| `onEvent`                 | Actions to perform on various events within the KeepAliveGatt's lifecycle. (onConnected and onDisconnected)               |
 
 For example, to create a `KeepAliveGatt` as a child of Android's `viewModelScope`:
 
@@ -34,10 +33,30 @@ class ExampleViewModel(application: Application) : AndroidViewModel(application)
     private val gatt = viewModelScope.keepAliveGatt(
         application,
         bluetoothAdapter.getRemoteDevice(MAC_ADDRESS),
-        disconnectTimeoutMillis = 5_000L // 5 seconds
+        disconnectTimeoutMillis = 5_000L, // 5 seconds
+        onEvent = { event ->
+            event.onConnected {
+               // Actions to perform on initial connect *and* subsequent reconnects:
+               discoverServicesOrThrow()
+            }
+            event.onDisconnected { disconnectInfo ->
+                // Actions to perform on disconnect, or after a failed connection attempt
+                if (disconnectInfo.wasConnected) { 
+                    /*
+                        True if this disconnection event follows a successful connection, false
+                        if it represents a failed connection attempt.
+                    */
+                } else if (disconnectInfo.connectionAttempt > 1) {
+                    /* 
+                        Value tracking the current connection attempt in the life span of the
+                        keepAliveGatt. Starts at 1 and increments by 1 for each connection attempt,
+                        whether successful or not.
+                    */
+                }
+            }
+        }
     ) {
-        // Actions to perform on initial connect *and* subsequent reconnects:
-        discoverServicesOrThrow()
+        
     }
 
     fun connect() {

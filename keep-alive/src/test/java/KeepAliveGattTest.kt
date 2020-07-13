@@ -403,7 +403,7 @@ class KeepAliveGattTest {
     fun `When connection is dropped after being connected, onDisconnect's value reflects that`() =
         runBlocking {
             val bluetoothDevice = mockBluetoothDevice()
-            val gatt1 = mockk<Gatt> {
+            val gatt = mockk<Gatt> {
                 every { onCharacteristicChanged } returns flow {
                     delay(2_000)
                     throw Exception("Test losing connection")
@@ -414,7 +414,7 @@ class KeepAliveGattTest {
             mockkStatic(BLUETOOTH_DEVICE_CLASS) {
                 coEvery {
                     bluetoothDevice.connectGatt(any())
-                } returns ConnectGattResult.Success(gatt1)
+                } returns ConnectGattResult.Success(gatt)
 
                 val job = Job()
                 var disconnectInfo: DisconnectInfo? = null
