@@ -373,7 +373,7 @@ class KeepAliveGattTest {
                 androidContext = mockk(relaxed = true),
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                onEvent = { event ->
+                eventHandler = { event ->
                     event.onConnected {
                         onConnectCalls++
                     }
@@ -422,7 +422,7 @@ class KeepAliveGattTest {
                     androidContext = mockk(relaxed = true),
                     bluetoothDevice = bluetoothDevice,
                     disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                    onEvent = { event ->
+                    eventHandler = { event ->
                         event.onDisconnected {
                             disconnectInfo = it
                         }
@@ -480,7 +480,7 @@ class KeepAliveGattTest {
                 androidContext = mockk(relaxed = true),
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                onEvent = { event ->
+                eventHandler = { event ->
                     event.onDisconnected {
                         disconnectInfos.add(it)
                     }
