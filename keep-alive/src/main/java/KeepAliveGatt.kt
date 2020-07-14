@@ -167,13 +167,13 @@ class KeepAliveGatt internal constructor(
     val state: Flow<State> = _state
 
     private val _onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
+    private var connectionAttempts = 1
 
     fun connect(): Boolean {
         check(!job.isCancelled) { "Cannot connect, $this is closed" }
         isRunning.compareAndSet(false, true) || return false
 
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
-            var connectionAttempts = 1
             while (isActive) {
                 val successfullyConnected = spawnConnection()
                 eventHandler?.invoke(
