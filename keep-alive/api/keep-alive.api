@@ -39,6 +39,23 @@ public final class com/juul/able/keepalive/Event$Disconnected : com/juul/able/ke
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/juul/able/keepalive/Event$Rejected : com/juul/able/keepalive/Event {
+	public fun <init> (Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Throwable;)Lcom/juul/able/keepalive/Event$Rejected;
+	public static synthetic fun copy$default (Lcom/juul/able/keepalive/Event$Rejected;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/juul/able/keepalive/Event$Rejected;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/juul/able/keepalive/EventKt {
+	public static final fun onConnected (Lcom/juul/able/keepalive/Event;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun onDisconnected (Lcom/juul/able/keepalive/Event;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun onRejected (Lcom/juul/able/keepalive/Event;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class com/juul/able/keepalive/KeepAliveGatt : com/juul/able/gatt/GattIo {
 	public final fun connect ()Z
 	public final fun disconnect (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -59,8 +76,6 @@ public final class com/juul/able/keepalive/KeepAliveGatt : com/juul/able/gatt/Ga
 public final class com/juul/able/keepalive/KeepAliveGattKt {
 	public static final fun keepAliveGatt (Lkotlinx/coroutines/CoroutineScope;Landroid/content/Context;Landroid/bluetooth/BluetoothDevice;JLkotlin/jvm/functions/Function2;)Lcom/juul/able/keepalive/KeepAliveGatt;
 	public static synthetic fun keepAliveGatt$default (Lkotlinx/coroutines/CoroutineScope;Landroid/content/Context;Landroid/bluetooth/BluetoothDevice;JLkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lcom/juul/able/keepalive/KeepAliveGatt;
-	public static final fun onConnected (Lcom/juul/able/keepalive/Event;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static final fun onDisconnected (Lcom/juul/able/keepalive/Event;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/juul/able/keepalive/NotReady : java/lang/IllegalStateException {
