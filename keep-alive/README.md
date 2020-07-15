@@ -39,14 +39,14 @@ class ExampleViewModel(application: Application) : AndroidViewModel(application)
                // Actions to perform on initial connect *and* subsequent reconnects:
                discoverServicesOrThrow()
             }
-            event.onDisconnected { disconnectInfo ->
+            event.onDisconnected {
                 // Actions to perform on disconnect, or after a failed connection attempt
-                if (disconnectInfo.wasConnected) { 
+                if (it.wasConnected) {
                     /*
                         True if this disconnection event follows a successful connection, false
                         if it represents a failed connection attempt.
                     */
-                } else if (disconnectInfo.connectionAttempt > 1) {
+                } else if (it.connectionAttempt > 1) {
                     /* 
                         Value tracking the current connection attempt in the life span of the
                         keepAliveGatt. Starts at 1 and increments by 1 for each connection attempt,

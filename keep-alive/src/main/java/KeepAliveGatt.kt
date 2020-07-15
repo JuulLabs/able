@@ -23,7 +23,6 @@ import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.gatt.WriteType
-import com.juul.able.keepalive.Event.Disconnected.Info
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -55,32 +54,32 @@ class NotReady internal constructor(message: String) : IllegalStateException(mes
 class ConnectionRejected internal constructor(cause: Throwable) : IOException(cause)
 
 sealed class Event {
+
+    /** Triggered upon a connection being successfully established. */
     data class Connected(val gatt: GattIo) : Event()
-    data class Disconnected(val info: Info) : Event() {
-        /**
-         * A set of information provided with the [Event.Disconnected], either immediately after a
-         * successful connection or after a failed connection attempt.
-         *
-         * The [connectionAttempt] property represents which connection attempt iteration over the
-         * lifespan of the [KeepAliveGatt] this [Info] event is associated with. The value begins at
-         * 1 and increase by 1 for each iteration.
-         *
-         * @param wasConnected is `true` if event follows an established connection, or `false` if previous connection attempt failed.
-         * @param connectionAttempt is the number of connection attempts since creation of [KeepAliveGatt].
-         */
-        data class Info(
-            val wasConnected: Boolean,
-            val connectionAttempt: Int
-        )
-    }
+
+    /**
+     * Triggered either immediately after an established connection has dropped or after a failed
+     * connection attempt.
+     *
+     * The [connectionAttempt] property represents which connection attempt iteration over the
+     * lifespan of the [KeepAliveGatt]. The value begins at 1 and increase by 1 for each iteration.
+     *
+     * @param wasConnected is `true` if event follows an established connection, or `false` if previous connection attempt failed.
+     * @param connectionAttempt is the number of connection attempts since creation of [KeepAliveGatt].
+     */
+    data class Disconnected(
+        val wasConnected: Boolean,
+        val connectionAttempt: Int
+    ) : Event()
 }
 
 suspend fun Event.onConnected(action: suspend (gatt: GattIo) -> Unit) {
     if (this is Event.Connected) action.invoke(gatt)
 }
 
-suspend fun Event.onDisconnected(action: suspend (Info) -> Unit) {
-    if (this is Event.Disconnected) action.invoke(info)
+suspend fun Event.onDisconnected(action: suspend (Event.Disconnected) -> Unit) {
+    if (this is Event.Disconnected) action.invoke(this)
 }
 
 typealias EventHandler = suspend (Event) -> Unit
@@ -143,8 +142,8 @@ class KeepAliveGatt internal constructor(
     /**
      * Provides a [Flow] of the [KeepAliveGatt]'s [State].
      *
-     * The initial [state] is [Disconnected] and will typically transition through the following
-     * [State]s after [connect] is called:
+     * The initial [state] is [Disconnected][State.Disconnected] and will typically transition
+     * through the following [State]s after [connect] is called:
      *
      * ```
      *                    connect()
@@ -165,7 +164,7 @@ class KeepAliveGatt internal constructor(
 
     private val _onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
 
-    private var connectionAttempt = 1
+    private var connectionAttempt = 0
 
     fun connect(): Boolean {
         check(!job.isCancelled) { "Cannot connect, $this is closed" }
@@ -173,10 +172,9 @@ class KeepAliveGatt internal constructor(
 
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
             while (isActive) {
+                connectionAttempt++
                 val didConnect = establishConnection()
-                eventHandler?.invoke(
-                    Event.Disconnected(Info(didConnect, connectionAttempt++))
-                )
+                eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
             }
         }.invokeOnCompletion { isRunning.set(false) }
         return true

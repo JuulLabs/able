@@ -21,7 +21,6 @@ import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.keepalive.ConnectionRejected
 import com.juul.able.keepalive.Event
-import com.juul.able.keepalive.Event.Disconnected.Info
 import com.juul.able.keepalive.NotReady
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
@@ -59,6 +58,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withTimeout
 
 private const val BLUETOOTH_DEVICE_CLASS = "com.juul.able.android.BluetoothDeviceKt"
 private const val MAC_ADDRESS = "00:11:22:33:FF:EE"
@@ -396,7 +396,7 @@ class KeepAliveGattTest {
     }
 
     @Test
-    fun `Info's wasConnected is true upon disconnect from established connection`() = runBlocking {
+    fun `wasConnected is true upon disconnect from established connection`() = runBlocking {
         val bluetoothDevice = mockBluetoothDevice()
         val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
         val gatt = mockk<Gatt> {
@@ -404,7 +404,7 @@ class KeepAliveGattTest {
             coEvery { disconnect() } returns Unit
         }
 
-        val disconnectedEvents = Channel<Info>()
+        val disconnectedEvents = Channel<Event.Disconnected>()
 
         mockkStatic(BLUETOOTH_DEVICE_CLASS) {
             coEvery {
@@ -427,7 +427,7 @@ class KeepAliveGattTest {
             onCharacteristicChanged.close() // Simulates connection drop.
 
             assertEquals(
-                expected = Info(wasConnected = true, connectionAttempt = 1),
+                expected = Event.Disconnected(wasConnected = true, connectionAttempt = 1),
                 actual = disconnectedEvents.receive()
             )
 
@@ -436,7 +436,7 @@ class KeepAliveGattTest {
     }
 
     @Test
-    fun `Connection failures increment, onDisconnect's connectionAttempt value`() = runBlocking {
+    fun `Subsequent connection failures yield increasing connectionAttempt values`() = runBlocking {
         val connectionAttempts = 5
         val bluetoothDevice = mockBluetoothDevice()
 
@@ -468,9 +468,47 @@ class KeepAliveGattTest {
 
             assertEquals<List<Event>>(
                 expected = (1..5).map {
-                    Event.Disconnected(Info(wasConnected = false, connectionAttempt = it))
+                    Event.Disconnected(wasConnected = false, connectionAttempt = it)
                 },
                 actual = events
+            )
+        }
+    }
+
+    @Test
+    fun `Exception while connected emits Disconnected event`() = runBlocking {
+        val bluetoothDevice = mockBluetoothDevice()
+        val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
+        val gatt = mockk<Gatt> {
+            every { this@mockk.onCharacteristicChanged } returns onCharacteristicChanged.asFlow()
+            coEvery { disconnect() } returns Unit
+        }
+
+        val events = Channel<Event>()
+
+        mockkStatic(BLUETOOTH_DEVICE_CLASS) {
+            coEvery { bluetoothDevice.connectGatt(any()) } returns ConnectGattResult.Success(gatt)
+
+            val job = Job()
+            val keepAlive = CoroutineScope(job).keepAliveGatt(
+                androidContext = mockk(relaxed = true),
+                bluetoothDevice = bluetoothDevice,
+                disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
+                eventHandler = events::send
+            )
+
+            keepAlive.connect()
+            assertEquals(
+                expected = Event.Connected(gatt),
+                actual = events.receive()
+            )
+
+            // Emulate failure while connected.
+            onCharacteristicChanged.close(IllegalStateException("Mock exception"))
+
+            assertEquals(
+                expected = Event.Disconnected(wasConnected = true, connectionAttempt = 1),
+                actual = events.receive()
             )
         }
     }
