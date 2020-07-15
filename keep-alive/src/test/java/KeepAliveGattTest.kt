@@ -58,6 +58,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withTimeout
 
 private const val BLUETOOTH_DEVICE_CLASS = "com.juul.able.android.BluetoothDeviceKt"
 private const val MAC_ADDRESS = "00:11:22:33:FF:EE"
@@ -470,6 +471,29 @@ class KeepAliveGattTest {
                     Event.Disconnected(wasConnected = false, connectionAttempt = it)
                 },
                 actual = events
+            )
+        }
+    }
+
+    @Test
+    fun `Return of null from connectGatt during connect emits Disconnected event`() = runBlocking {
+        val bluetoothDevice = mockBluetoothDevice()
+        val scope = CoroutineScope(Job())
+
+        val events = Channel<Event>()
+
+        val keepAlive = scope.keepAliveGatt(
+            androidContext = mockk(relaxed = true),
+            bluetoothDevice = bluetoothDevice,
+            disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
+            eventHandler = events::send
+        )
+
+        assertTrue(keepAlive.connect())
+        withTimeout(5_000L) {
+            assertEquals(
+                expected = Event.Disconnected(wasConnected = false, connectionAttempt = 1),
+                actual = events.receive()
             )
         }
     }
