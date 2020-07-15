@@ -95,11 +95,7 @@ distinction between the two is:
 for example:
 
 ```kotlin
-    private val gatt = viewModelScope.keepAliveGatt(
-        application,
-        bluetoothAdapter.getRemoteDevice(MAC_ADDRESS),
-        disconnectTimeoutMillis = 5_000L // 5 seconds
-    ) { event ->
+    private val gatt = viewModelScope.keepAliveGatt(...) { event ->
         event.onConnected {
             // Actions to perform on initial connect *and* subsequent reconnects:
             discoverServicesOrThrow()
