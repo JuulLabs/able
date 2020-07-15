@@ -20,7 +20,8 @@ import com.juul.able.gatt.Gatt
 import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.keepalive.ConnectionRejected
-import com.juul.able.keepalive.DisconnectInfo
+import com.juul.able.keepalive.Event
+import com.juul.able.keepalive.Event.Disconnected.Info
 import com.juul.able.keepalive.NotReady
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
@@ -40,7 +41,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -65,6 +65,8 @@ private const val MAC_ADDRESS = "00:11:22:33:FF:EE"
 private const val DISCONNECT_TIMEOUT = 5_000L // milliseconds
 
 private val testUuid = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+
+private class EndOfTest : Exception()
 
 class KeepAliveGattTest {
 
@@ -194,8 +196,6 @@ class KeepAliveGattTest {
             keepAlive.discoverServices()
         }
     }
-
-    private class EndOfTest : Exception()
 
     @Test
     fun `Retries connection on connection failure`() {
@@ -355,15 +355,16 @@ class KeepAliveGattTest {
     }
 
     @Test
-    fun `When 'connect' occurs, the onEvent is called with Connected event`() = runBlocking {
+    fun `When connection established, EventHandler is called with Connected event`() = runBlocking {
         val bluetoothDevice = mockBluetoothDevice()
         val gatt = mockk<Gatt> {
             every { onCharacteristicChanged } returns flow { delay(Long.MAX_VALUE) }
             coEvery { disconnect() } returns Unit
         }
 
+        var connectedEvents = 0
+
         mockkStatic(BLUETOOTH_DEVICE_CLASS) {
-            var onConnectCalls = 0
             coEvery {
                 bluetoothDevice.connectGatt(any())
             } returns ConnectGattResult.Success(gatt)
@@ -374,25 +375,20 @@ class KeepAliveGattTest {
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
                 eventHandler = { event ->
-                    event.onConnected {
-                        onConnectCalls++
-                    }
+                    event.onConnected { connectedEvents++ }
                 }
             )
+
             assertEquals(
                 expected = 0,
-                actual = onConnectCalls
+                actual = connectedEvents
             )
 
-            val ready = async(start = UNDISPATCHED) {
-                keepAlive.state.first { it == Connected }
-            }
             keepAlive.connect()
-            ready.await()
-
+            keepAlive.state.first { it == Connected }
             assertEquals(
                 expected = 1,
-                actual = onConnectCalls
+                actual = connectedEvents
             )
 
             job.cancelAndJoin()
@@ -400,61 +396,44 @@ class KeepAliveGattTest {
     }
 
     @Test
-    fun `When connection is dropped after being connected, onDisconnect's value reflects that`() =
-        runBlocking {
-            val bluetoothDevice = mockBluetoothDevice()
-            val gatt = mockk<Gatt> {
-                every { onCharacteristicChanged } returns flow {
-                    delay(2_000)
-                    throw Exception("Test losing connection")
-                }
-                coEvery { disconnect() } returns Unit
-            }
-
-            mockkStatic(BLUETOOTH_DEVICE_CLASS) {
-                coEvery {
-                    bluetoothDevice.connectGatt(any())
-                } returns ConnectGattResult.Success(gatt)
-
-                val job = Job()
-                var disconnectInfo: DisconnectInfo? = null
-                val keepAlive = CoroutineScope(job).keepAliveGatt(
-                    androidContext = mockk(relaxed = true),
-                    bluetoothDevice = bluetoothDevice,
-                    disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                    eventHandler = { event ->
-                        event.onDisconnected {
-                            disconnectInfo = it
-                        }
-                    }
-                )
-
-                val ready = async(start = UNDISPATCHED) {
-                    keepAlive.state.first { it == Connected }
-                }
-                keepAlive.connect()
-                ready.await()
-
-                assertNull(disconnectInfo)
-
-                val disconnected = async(start = UNDISPATCHED) {
-                    keepAlive.state.first { it is Disconnected }
-                }
-                disconnected.await()
-
-                val connecting = async(start = UNDISPATCHED) {
-                    keepAlive.state.first { it is Connecting }
-                }
-                connecting.await()
-
-                assertEquals(
-                    expected = DisconnectInfo(true, 1),
-                    actual = disconnectInfo
-                )
-
-                job.cancelAndJoin()
-            }
+    fun `Info's wasConnected is true upon disconnect from established connection`() = runBlocking {
+        val bluetoothDevice = mockBluetoothDevice()
+        val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
+        val gatt = mockk<Gatt> {
+            every { this@mockk.onCharacteristicChanged } returns onCharacteristicChanged.asFlow()
+            coEvery { disconnect() } returns Unit
         }
+
+        val disconnectedEvents = Channel<Info>()
+
+        mockkStatic(BLUETOOTH_DEVICE_CLASS) {
+            coEvery {
+                bluetoothDevice.connectGatt(any())
+            } returns ConnectGattResult.Success(gatt)
+
+            val job = Job()
+            val keepAlive = CoroutineScope(job).keepAliveGatt(
+                androidContext = mockk(relaxed = true),
+                bluetoothDevice = bluetoothDevice,
+                disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
+                eventHandler = { event ->
+                    event.onDisconnected { disconnectedEvents.send(it) }
+                }
+            )
+
+            keepAlive.connect()
+            keepAlive.state.first { it == Connected }
+
+            onCharacteristicChanged.close() // Simulates connection drop.
+
+            assertEquals(
+                expected = Info(wasConnected = true, connectionAttempt = 1),
+                actual = disconnectedEvents.receive()
+            )
+
+            job.cancelAndJoin()
+        }
+    }
 
     @Test
     fun `Connection failures increment, onDisconnect's connectionAttempt value`() = runBlocking {
@@ -465,35 +444,33 @@ class KeepAliveGattTest {
         val scope = CoroutineScope(Job() + CoroutineExceptionHandler { _, cause ->
             if (cause is EndOfTest) lock.unlock()
         })
+
         mockkStatic(BLUETOOTH_DEVICE_CLASS) {
             var attempt = 0
             coEvery {
                 bluetoothDevice.connectGatt(any())
             } answers {
-                if (++attempt >= connectionAttempts) throw EndOfTest()
+                if (++attempt > connectionAttempts) throw EndOfTest()
                 Failure.Connection(mockk<ConnectionLost>())
             }
 
-            var disconnectInfos = mutableListOf<DisconnectInfo>()
+            val events = mutableListOf<Event>()
 
             val keepAlive = scope.keepAliveGatt(
                 androidContext = mockk(relaxed = true),
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                eventHandler = { event ->
-                    event.onDisconnected {
-                        disconnectInfos.add(it)
-                    }
-                }
+                eventHandler = { event -> events += event }
             )
 
             keepAlive.connect()
-            lock.lock()
-            assertEquals(
-                expected = listOf(1, 2, 3, 4),
-                actual = disconnectInfos.map {
-                    it.connectionAttempt
-                }.toList()
+            lock.lock() // Wait for "end of test" signal.
+
+            assertEquals<List<Event>>(
+                expected = (1..5).map {
+                    Event.Disconnected(Info(wasConnected = false, connectionAttempt = it))
+                },
+                actual = events
             )
         }
     }

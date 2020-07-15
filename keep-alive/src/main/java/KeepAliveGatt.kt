@@ -23,10 +23,7 @@ import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.gatt.WriteType
-import com.juul.able.keepalive.State.Cancelled
-import com.juul.able.keepalive.State.Connected
-import com.juul.able.keepalive.State.Connecting
-import com.juul.able.keepalive.State.Disconnected
+import com.juul.able.keepalive.Event.Disconnected.Info
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -57,6 +54,37 @@ import kotlinx.coroutines.withTimeoutOrNull
 class NotReady internal constructor(message: String) : IllegalStateException(message)
 class ConnectionRejected internal constructor(cause: Throwable) : IOException(cause)
 
+sealed class Event {
+    data class Connected(val gatt: GattIo) : Event()
+    data class Disconnected(val info: Info) : Event() {
+        /**
+         * A set of information provided with the [Event.Disconnected], either immediately after a
+         * successful connection or after a failed connection attempt.
+         *
+         * The [connectionAttempt] property represents which connection attempt iteration over the
+         * lifespan of the [KeepAliveGatt] this [Info] event is associated with. The value begins at
+         * 1 and increase by 1 for each iteration.
+         *
+         * @param wasConnected is `true` if event follows an established connection, or `false` if previous connection attempt failed.
+         * @param connectionAttempt is the number of connection attempts since creation of [KeepAliveGatt].
+         */
+        data class Info(
+            val wasConnected: Boolean,
+            val connectionAttempt: Int
+        )
+    }
+}
+
+suspend fun Event.onConnected(action: suspend (gatt: GattIo) -> Unit) {
+    if (this is Event.Connected) action.invoke(gatt)
+}
+
+suspend fun Event.onDisconnected(action: suspend (Info) -> Unit) {
+    if (this is Event.Disconnected) action.invoke(info)
+}
+
+typealias EventHandler = suspend (Event) -> Unit
+
 sealed class State {
     object Connecting : State()
     object Connected : State()
@@ -71,37 +99,6 @@ sealed class State {
 
     override fun toString(): String = javaClass.simpleName
 }
-
-sealed class Event {
-    data class Connected(val gatt: GattIo) : Event()
-    data class Disconnected(val disconnectInfo: DisconnectInfo) : Event()
-}
-
-/**
- * A set of information provided with the Disconnected event, either immediately after
- * a successful connection or after a failed connection attempt.
- *
- * @Param wasConnected represents whether or not the Disconnection event follows a successful
- * connection which ended (true) or indicates a failed connection attempt (false).
- *
- * @Param connectionAttempt represents which connection attempt iteration over the lifespan of the
- * KeepAliveGatt this Disconnect event is associated with. The values begin at 1 and increase
- * by 1 for each iteration.
- */
-data class DisconnectInfo(
-    val wasConnected: Boolean,
-    val connectionAttempt: Int
-)
-
-suspend fun Event.onConnected(action: suspend (gatt: GattIo) -> Unit) {
-    if (this is Event.Connected) action.invoke(gatt)
-}
-
-suspend fun Event.onDisconnected(action: suspend (DisconnectInfo) -> Unit) {
-    if (this is Event.Disconnected) action.invoke(disconnectInfo)
-}
-
-typealias EventHandler = (suspend (Event) -> Unit)
 
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
@@ -128,7 +125,7 @@ class KeepAliveGatt internal constructor(
 
     private val job = SupervisorJob(parentCoroutineContext[Job]).apply {
         invokeOnCompletion { cause ->
-            _state.value = Cancelled(cause)
+            _state.value = State.Cancelled(cause)
             _onCharacteristicChanged.cancel()
         }
     }
@@ -141,7 +138,7 @@ class KeepAliveGatt internal constructor(
     private val gatt: GattIo
         inline get() = _gatt ?: throw NotReady(toString())
 
-    private val _state = MutableStateFlow<State>(Disconnected())
+    private val _state = MutableStateFlow<State>(State.Disconnected())
 
     /**
      * Provides a [Flow] of the [KeepAliveGatt]'s [State].
@@ -167,7 +164,8 @@ class KeepAliveGatt internal constructor(
     val state: Flow<State> = _state
 
     private val _onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
-    private var connectionAttempts = 1
+
+    private var connectionAttempt = 1
 
     fun connect(): Boolean {
         check(!job.isCancelled) { "Cannot connect, $this is closed" }
@@ -175,11 +173,9 @@ class KeepAliveGatt internal constructor(
 
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
             while (isActive) {
-                val successfullyConnected = spawnConnection()
+                val didConnect = establishConnection()
                 eventHandler?.invoke(
-                    Event.Disconnected(
-                        DisconnectInfo(successfullyConnected, connectionAttempts++)
-                    )
+                    Event.Disconnected(Info(didConnect, connectionAttempt++))
                 )
             }
         }.invokeOnCompletion { isRunning.set(false) }
@@ -191,12 +187,15 @@ class KeepAliveGatt internal constructor(
     }
 
     /**
-     * Returns a boolean indicating whether or not this function was successful at connecting
-     * after it is completed.
+     * Establishes a connection, suspending until either the attempt at establishing connection
+     * fails or an established connection drops.
+     *
+     * @return `true` if connection was established (then dropped), or `false` if connection attempt failed.
+     * @throws ConnectionRejected if the operating system rejects the connection request.
      */
-    private suspend fun spawnConnection(): Boolean {
+    private suspend fun establishConnection(): Boolean {
         try {
-            _state.value = Connecting
+            _state.value = State.Connecting
 
             val gatt: Gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
                 is Success -> result.gatt
@@ -216,7 +215,7 @@ class KeepAliveGatt internal constructor(
                                 .launchIn(this, start = UNDISPATCHED)
                             _gatt = gatt
                             eventHandler?.invoke(Event.Connected(gatt))
-                            _state.value = Connected
+                            _state.value = State.Connected
                         }
                     } finally {
                         _gatt = null
@@ -232,10 +231,10 @@ class KeepAliveGatt internal constructor(
                     }
                 }
             }
-            _state.value = Disconnected()
+            _state.value = State.Disconnected()
             return true
         } catch (failure: Exception) {
-            _state.value = Disconnected(failure)
+            _state.value = State.Disconnected(failure)
             throw failure
         }
     }
