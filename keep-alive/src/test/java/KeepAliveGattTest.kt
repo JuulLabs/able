@@ -126,6 +126,8 @@ class KeepAliveGattTest {
             coEvery { disconnect() } returns Unit
         }
 
+        val didDisconnect = Mutex(locked = true)
+
         mockkStatic(BLUETOOTH_DEVICE_CLASS) {
             coEvery {
                 bluetoothDevice.connectGatt(any())
@@ -136,7 +138,10 @@ class KeepAliveGattTest {
                 androidContext = mockk(relaxed = true),
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT
-            )
+            ) { event ->
+                event.onDisconnected { didDisconnect.unlock() }
+            }
+
             assertEquals(
                 expected = Disconnected(),
                 actual = keepAlive.state.first()
@@ -145,11 +150,8 @@ class KeepAliveGattTest {
             keepAlive.connect()
             keepAlive.state.first { it == Connected } // Wait until connected.
 
-            val dropped = async(start = UNDISPATCHED) {
-                keepAlive.state.first { it != Connected }
-            }
             onCharacteristicChanged1.close() // Simulates connection drop.
-            dropped.await() // Validates that connection dropped.
+            didDisconnect.lock() // Validates that connection dropped.
 
             keepAlive.state.first { it == Connected } // Wait until reconnected.
             job.cancelAndJoin()
