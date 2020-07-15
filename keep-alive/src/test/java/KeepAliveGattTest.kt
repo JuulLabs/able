@@ -476,7 +476,7 @@ class KeepAliveGattTest {
     }
 
     @Test
-    fun `Return of null from connectGatt during connect emits Disconnected event`() = runBlocking {
+    fun `Return of null from connectGatt during connect emits Rejected event`() = runBlocking {
         val bluetoothDevice = mockBluetoothDevice()
         val scope = CoroutineScope(Job())
 
@@ -490,12 +490,10 @@ class KeepAliveGattTest {
         )
 
         assertTrue(keepAlive.connect())
-        withTimeout(5_000L) {
-            assertEquals(
-                expected = Event.Disconnected(wasConnected = false, connectionAttempt = 1),
-                actual = events.receive()
-            )
-        }
+        assertEquals<Class<out Event>>(
+            expected = Event.Rejected::class.java,
+            actual = events.receive().javaClass
+        )
     }
 
     @Test

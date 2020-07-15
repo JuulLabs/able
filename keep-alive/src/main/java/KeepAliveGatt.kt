@@ -53,51 +53,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 class NotReady internal constructor(message: String) : IllegalStateException(message)
 class ConnectionRejected internal constructor(cause: Throwable) : IOException(cause)
 
-sealed class Event {
-
-    /** Triggered upon a connection being successfully established. */
-    data class Connected(val gatt: GattIo) : Event()
-
-    /**
-     * Triggered either immediately after an established connection has dropped or after a failed
-     * connection attempt.
-     *
-     * The [connectionAttempt] property represents which connection attempt iteration over the
-     * lifespan of the [KeepAliveGatt]. The value begins at 1 and increase by 1 for each iteration.
-     *
-     * @param wasConnected is `true` if event follows an established connection, or `false` if previous connection attempt failed.
-     * @param connectionAttempt is the number of connection attempts since creation of [KeepAliveGatt].
-     */
-    data class Disconnected(
-        val wasConnected: Boolean,
-        val connectionAttempt: Int
-    ) : Event()
-}
-
-suspend fun Event.onConnected(action: suspend (gatt: GattIo) -> Unit) {
-    if (this is Event.Connected) action.invoke(gatt)
-}
-
-suspend fun Event.onDisconnected(action: suspend (Event.Disconnected) -> Unit) {
-    if (this is Event.Disconnected) action.invoke(this)
-}
-
 typealias EventHandler = suspend (Event) -> Unit
-
-sealed class State {
-    object Connecting : State()
-    object Connected : State()
-    object Disconnecting : State()
-    data class Disconnected(val cause: Throwable? = null) : State() {
-        override fun toString() = super.toString()
-    }
-
-    data class Cancelled(val cause: Throwable?) : State() {
-        override fun toString() = super.toString()
-    }
-
-    override fun toString(): String = javaClass.simpleName
-}
 
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
@@ -173,8 +129,13 @@ class KeepAliveGatt internal constructor(
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
             while (isActive) {
                 connectionAttempt++
-                val didConnect = establishConnection()
-                eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
+                try {
+                    val didConnect = establishConnection()
+                    eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
+                } catch (rejected: ConnectionRejected) {
+                    eventHandler?.invoke(Event.Rejected(cause = rejected))
+                    throw rejected
+                }
             }
         }.invokeOnCompletion { isRunning.set(false) }
         return true
