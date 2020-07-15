@@ -12,19 +12,6 @@ public final class com/juul/able/keepalive/BuildConfig {
 public final class com/juul/able/keepalive/ConnectionRejected : java/io/IOException {
 }
 
-public final class com/juul/able/keepalive/DisconnectInfo {
-	public fun <init> (ZI)V
-	public final fun component1 ()Z
-	public final fun component2 ()I
-	public final fun copy (ZI)Lcom/juul/able/keepalive/DisconnectInfo;
-	public static synthetic fun copy$default (Lcom/juul/able/keepalive/DisconnectInfo;ZIILjava/lang/Object;)Lcom/juul/able/keepalive/DisconnectInfo;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getConnectionAttempt ()I
-	public final fun getWasConnected ()Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public abstract class com/juul/able/keepalive/Event {
 }
 
@@ -40,12 +27,14 @@ public final class com/juul/able/keepalive/Event$Connected : com/juul/able/keepa
 }
 
 public final class com/juul/able/keepalive/Event$Disconnected : com/juul/able/keepalive/Event {
-	public fun <init> (Lcom/juul/able/keepalive/DisconnectInfo;)V
-	public final fun component1 ()Lcom/juul/able/keepalive/DisconnectInfo;
-	public final fun copy (Lcom/juul/able/keepalive/DisconnectInfo;)Lcom/juul/able/keepalive/Event$Disconnected;
-	public static synthetic fun copy$default (Lcom/juul/able/keepalive/Event$Disconnected;Lcom/juul/able/keepalive/DisconnectInfo;ILjava/lang/Object;)Lcom/juul/able/keepalive/Event$Disconnected;
+	public fun <init> (ZI)V
+	public final fun component1 ()Z
+	public final fun component2 ()I
+	public final fun copy (ZI)Lcom/juul/able/keepalive/Event$Disconnected;
+	public static synthetic fun copy$default (Lcom/juul/able/keepalive/Event$Disconnected;ZIILjava/lang/Object;)Lcom/juul/able/keepalive/Event$Disconnected;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getDisconnectInfo ()Lcom/juul/able/keepalive/DisconnectInfo;
+	public final fun getConnectionAttempt ()I
+	public final fun getWasConnected ()Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
