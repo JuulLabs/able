@@ -46,7 +46,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -55,19 +54,15 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.forEach
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 
 private const val BLUETOOTH_DEVICE_CLASS = "com.juul.able.android.BluetoothDeviceKt"
@@ -429,105 +424,140 @@ class KeepAliveGattTest {
 
     @Test
     fun `Exception in onConnected makes KeepAliveGatt settle on Disconnected`() = runBlocking {
+        val job = Job()
+        val testException = IllegalStateException("Test Exception in onConnected lambda")
+
         val bluetoothDevice = mockBluetoothDevice()
-        val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
         val gatt = mockk<Gatt> {
-            every { this@mockk.onCharacteristicChanged } returns onCharacteristicChanged.asFlow()
+            every { onCharacteristicChanged } returns flow { delay(Long.MAX_VALUE) }
             coEvery { disconnect() } returns Unit
         }
+
         mockkStatic(BLUETOOTH_DEVICE_CLASS) {
             coEvery {
                 bluetoothDevice.connectGatt(any())
             } returns ConnectGattResult.Success(gatt)
-            val job = Job()
-            val keepAlive = CoroutineScope(job).keepAliveGatt(
+
+            val scope = CoroutineScope(job)
+            val keepAlive = scope.keepAliveGatt(
                 androidContext = mockk(relaxed = true),
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
                 eventHandler = { event ->
-                    event.onConnected { throw Exception("Test failing in onConnected lambda") }
+                    event.onConnected { throw testException }
                 }
             )
-            val stateList = mutableListOf<State>()
+
+            val states = mutableListOf<State>()
+            keepAlive.state.onEach { states += it }.launchIn(scope)
+
             keepAlive.connect()
-            withTimeoutOrNull(2_000) {
-                keepAlive.state.collectLatest { state ->
-                    stateList.add(state)
-                }
-            }
-            assert(stateList.size <= 3)
-            assert(stateList.last() is Disconnected)
+            delay(5_000L) // Slight wait to make sure we've **settled** on Disconnected state.
+
+            // Asserting that no more than the following states were emitted:
+            // - Disconnected
+            // - Connecting
+            // - Connected
+            // - Disconnecting
+            // - Disconnected
+            assertTrue(states.size <= 5)
+            assertEquals(
+                expected = Disconnected(testException),
+                actual = states.last()
+            )
         }
+
+        job.cancelAndJoin()
     }
 
     @Test
     fun `Exception in onDisconnected makes KeepAliveGatt settle on Disconnected`() = runBlocking {
+        val job = Job()
+        val connectionDropException = IllegalStateException("Connection dropped")
+
         val bluetoothDevice = mockBluetoothDevice()
         val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
         val gatt = mockk<Gatt> {
             every { this@mockk.onCharacteristicChanged } returns onCharacteristicChanged.asFlow()
             coEvery { disconnect() } returns Unit
         }
+
         mockkStatic(BLUETOOTH_DEVICE_CLASS) {
             coEvery {
                 bluetoothDevice.connectGatt(any())
             } returns ConnectGattResult.Success(gatt)
-            val job = Job()
-            val keepAlive = CoroutineScope(job).keepAliveGatt(
+
+            val scope = CoroutineScope(job)
+            val keepAlive = scope.keepAliveGatt(
                 androidContext = mockk(relaxed = true),
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
                 eventHandler = { event ->
-                    event.onDisconnected { throw Exception("Test failing in onDisconnected lambda") }
+                    event.onDisconnected { throw error("Test Exception in onDisconnected lambda") }
                 }
             )
-            val stateList = mutableListOf<State>()
 
-            val stateJob = keepAlive.state.onEach {
-                stateList.add(it)
-            }.launchIn(this)
+            val states = mutableListOf<State>()
+            keepAlive.state.onEach { states += it }.launchIn(scope)
 
             keepAlive.connect()
-
             keepAlive.state.first { it == Connected }
+            onCharacteristicChanged.close(connectionDropException) // Emulate a connection drop.
 
-            onCharacteristicChanged.close()
+            delay(5_000L) // Slight wait to make sure we've **settled** on Disconnected state.
 
-            delay(2_000)
+            // Asserting that no more than the following states were emitted:
+            // - Disconnected
+            // - Connecting
+            // - Connected
+            // - Disconnecting
+            // - Disconnected
+            assertTrue(states.size <= 5)
 
-            stateJob.cancelAndJoin()
-
-            assert(stateList.size <= 4)
-            assert(stateList.last() is Disconnected)
+            assertEquals(
+                expected = Disconnected(cause = connectionDropException),
+                actual = states.last()
+            )
         }
+
+        job.cancelAndJoin()
     }
 
     @Test
     fun `Exception in onRejected makes KeepAliveGatt settle on Disconnected`() = runBlocking {
+        val job = Job()
         val bluetoothDevice = mockBluetoothDevice()
-        mockkStatic(BLUETOOTH_DEVICE_CLASS) {
-            coEvery {
-                bluetoothDevice.connectGatt(any())
-            } returns Failure.Rejected(Exception("Test rejected"))
-            val job = Job()
-            val keepAlive = CoroutineScope(job).keepAliveGatt(
-                androidContext = mockk(relaxed = true),
-                bluetoothDevice = bluetoothDevice,
-                disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
-                eventHandler = { event ->
-                    event.onRejected { throw Exception("Test failing in onRejected lambda") }
-                }
-            )
-            val stateList = mutableListOf<State>()
-            keepAlive.connect()
-            withTimeoutOrNull(2_000) {
-                keepAlive.state.collectLatest { state ->
-                    stateList.add(state)
-                }
+        val testException = IllegalStateException("Test Exception in onRejected lambda")
+
+        val scope = CoroutineScope(job)
+        val keepAlive = scope.keepAliveGatt(
+            androidContext = mockk(relaxed = true),
+            bluetoothDevice = bluetoothDevice,
+            disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
+            eventHandler = { event ->
+                event.onRejected { throw testException }
             }
-            assert(stateList.size <= 3)
-            assert(stateList.last() is Disconnected)
-        }
+        )
+
+        val states = mutableListOf<State>()
+        keepAlive.state.onEach { states += it }.launchIn(scope)
+
+        keepAlive.connect()
+
+        delay(5_000L) // Slight wait to make sure we've **settled** on Disconnected state.
+
+        // Asserting that no more than the following states were emitted:
+        // - Disconnected
+        // - Connecting
+        // - Connected
+        // - Disconnecting
+        // - Disconnected
+        assertTrue(states.size <= 5)
+
+        val lastState = states.last() as Disconnected
+        assertThrowable<RemoteException>(lastState.cause)
+
+        job.cancelAndJoin()
     }
 
     @Test
@@ -662,7 +692,7 @@ class KeepAliveGattTest {
             keepAlive.state.first { it == Connected }
 
             // Emulate failure while connected.
-            onCharacteristicChanged.close(IllegalStateException("Mock exception"))
+            onCharacteristicChanged.close(IllegalStateException("Connection dropped"))
 
             assertEquals(
                 expected = Event.Disconnected(wasConnected = true, connectionAttempt = 1),
