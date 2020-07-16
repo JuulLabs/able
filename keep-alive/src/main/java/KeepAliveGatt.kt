@@ -23,7 +23,6 @@ import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.gatt.WriteType
-import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
@@ -40,7 +39,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
@@ -53,7 +51,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 class NotReady internal constructor(message: String) : IllegalStateException(message)
-class ConnectionRejected internal constructor(cause: Throwable) : IOException(cause)
 
 typealias EventHandler = suspend (Event) -> Unit
 
@@ -90,7 +87,7 @@ class KeepAliveGatt internal constructor(
     }
     private val scope = CoroutineScope(parentCoroutineContext + job)
 
-    private val isRunning = AtomicBoolean()
+    internal val isRunning = AtomicBoolean()
 
     @Volatile
     private var _gatt: GattIo? = null
@@ -134,11 +131,7 @@ class KeepAliveGatt internal constructor(
             while (isActive) {
                 connectionAttempt++
                 try {
-                    val didConnect = establishConnection()
-                    eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
-                } catch (rejected: ConnectionRejected) {
-                    eventHandler?.invoke(Event.Rejected(cause = rejected))
-                    throw rejected
+                    establishConnection()
                 } catch (onConnectException: OnConnectException) {
                     cancel(CancellationException("Exception thrown in onConnected event handler", onConnectException.cause))
                 }
@@ -154,60 +147,63 @@ class KeepAliveGatt internal constructor(
     /**
      * Establishes a connection, suspending until either the attempt at establishing connection
      * fails or an established connection drops.
-     *
-     * @return `true` if connection was established (then dropped), or `false` if connection attempt failed.
-     * @throws ConnectionRejected if the operating system rejects the connection request.
      */
-    private suspend fun establishConnection(): Boolean {
-        try {
-            _state.value = State.Connecting
+    private suspend fun establishConnection() {
+        var didConnect = false
+        _state.value = State.Connecting
 
-            val gatt: Gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
-                is Success -> result.gatt
-                is Failure.Rejected -> throw ConnectionRejected(result.cause)
-                is Failure.Connection -> {
-                    Able.error { "Failed to connect to device $bluetoothDevice due to ${result.cause}" }
-                    return false
-                }
+        val gatt: Gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
+            is Success -> result.gatt
+            is Failure.Rejected -> {
+                _state.value = State.Disconnected(result.cause)
+                eventHandler?.invoke(Event.Rejected(result.cause))
+                throw result.cause
             }
+            is Failure.Connection -> {
+                Able.error { "Failed to connect to device $bluetoothDevice due to ${result.cause}" }
+                _state.value = State.Disconnected(result.cause)
+                eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
+                return
+            }
+        }
 
-            supervisorScope {
-                launch {
+        try {
+            try {
+                supervisorScope {
+                    gatt.onCharacteristicChanged
+                        .onEach(_onCharacteristicChanged::send)
+                        .launchIn(this, start = UNDISPATCHED)
+                    _gatt = gatt
+
                     try {
-                        coroutineScope {
-                            gatt.onCharacteristicChanged
-                                .onEach(_onCharacteristicChanged::send)
-                                .launchIn(this, start = UNDISPATCHED)
-                            _gatt = gatt
+                        eventHandler?.invoke(Event.Connected(gatt))
+                    } catch (exception: Exception) {
+                        // Special exception to signal that we should not reconnect.
+                        throw OnConnectException(exception)
+                    }
 
-                            try {
-                                eventHandler?.invoke(Event.Connected(gatt))
-                            } catch (exception: Exception) {
-                                // Special exception to signal that we should not reconnect.
-                                throw OnConnectException(exception)
-                            }
+                    didConnect = true
+                    _state.value = State.Connected
+                }
+            } finally {
+                _gatt = null
+                _state.value = State.Disconnecting
 
-                            _state.value = State.Connected
-                        }
-                    } finally {
-                        _gatt = null
-                        _state.value = State.Disconnecting
-
-                        withContext(NonCancellable) {
-                            withTimeoutOrNull(disconnectTimeoutMillis) {
-                                gatt.disconnect()
-                            } ?: Able.warn {
-                                "Timed out waiting ${disconnectTimeoutMillis}ms for disconnect"
-                            }
-                        }
+                withContext(NonCancellable) {
+                    withTimeoutOrNull(disconnectTimeoutMillis) {
+                        gatt.disconnect()
+                    } ?: Able.warn {
+                        "Timed out waiting ${disconnectTimeoutMillis}ms for disconnect"
                     }
                 }
             }
+
             _state.value = State.Disconnected()
-            return true
         } catch (failure: Exception) {
             _state.value = State.Disconnected(failure)
             throw failure
+        } finally {
+            eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
         }
     }
 
