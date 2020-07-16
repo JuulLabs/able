@@ -667,58 +667,6 @@ class KeepAliveGattTest {
             actual = keepAlive.toString()
         )
     }
-
-    private class ExceptionFromConnectAction : Exception()
-
-    @Test
-    fun `An Exception thrown from 'connectAction' causes reconnect`() = runBlocking {
-        val bluetoothDevice = mockBluetoothDevice()
-        val gatt1 = mockk<Gatt> {
-            every { onCharacteristicChanged } returns flow { delay(Long.MAX_VALUE) }
-            coEvery { disconnect() } returns Unit
-        }
-        val gatt2 = mockk<Gatt> {
-            every { onCharacteristicChanged } returns flow { delay(Long.MAX_VALUE) }
-            coEvery { disconnect() } returns Unit
-        }
-        var thrown: Throwable? = null
-        val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-            thrown = throwable
-        }
-
-        mockkStatic(BLUETOOTH_DEVICE_CLASS) {
-            coEvery {
-                bluetoothDevice.connectGatt(any())
-            } returnsMany listOf(gatt1, gatt2).map { ConnectGattResult.Success(it) }
-
-            val job = Job()
-            val scope = CoroutineScope(job + exceptionHandler)
-            var shouldThrow = true
-            val keepAlive = scope.keepAliveGatt(
-                androidContext = mockk(relaxed = true),
-                bluetoothDevice = bluetoothDevice,
-                disconnectTimeoutMillis = DISCONNECT_TIMEOUT
-            ) {
-                if (shouldThrow) {
-                    shouldThrow = false // Only throw on the first connection attempt.
-                    throw ExceptionFromConnectAction()
-                }
-            }
-            assertEquals(
-                expected = Disconnected(),
-                actual = keepAlive.state.first()
-            )
-
-            keepAlive.connect()
-            keepAlive.state.first { it == Connected } // Wait until connected.
-            job.cancelAndJoin()
-
-            assertThrowable<ExceptionFromConnectAction>(thrown)
-            coVerify(exactly = 2) { bluetoothDevice.connectGatt(any()) }
-            coVerify(exactly = 1) { gatt1.disconnect() }
-            coVerify(exactly = 1) { gatt2.disconnect() }
-        }
-    }
 }
 
 private fun mockBluetoothDevice(): BluetoothDevice = mockk {
