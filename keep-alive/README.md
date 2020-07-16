@@ -21,7 +21,7 @@ fun CoroutineScope.keepAliveGatt(
 | `androidContext`          | The Android `Context` for establishing Bluetooth Low-Energy connections.                                                  |
 | `bluetoothDevice`         | `BluetoothDevice` to maintain a connection with.                                                                          |
 | `disconnectTimeoutMillis` | Duration (in milliseconds) to wait for connection to gracefully spin down (after `disconnect`) before forcefully closing. |
-| `onEvent`                 | Actions to perform on various events within the KeepAliveGatt's lifecycle. (Connected / Disconnected)                     |
+| `eventHandler`            | Actions to perform on various events within the KeepAliveGatt's lifecycle (e.g. Connected, Disconnected, Rejected).       |
 
 For example, to create a `KeepAliveGatt` as a child of Android's `viewModelScope`:
 
@@ -95,15 +95,15 @@ distinction between the two is:
 for example:
 
 ```kotlin
-    private val gatt = viewModelScope.keepAliveGatt(...) { event ->
-        event.onConnected {
-            // Actions to perform on initial connect *and* subsequent reconnects:
-            discoverServicesOrThrow()
-        }
-        event.onDisconnected {
-            // todo: retry strategy (e.g. exponentially increasing delay)
-        }
+val gatt = viewModelScope.keepAliveGatt(...) { event ->
+    event.onConnected {
+        // Actions to perform on initial connect *and* subsequent reconnects:
+        discoverServicesOrThrow()
     }
+    event.onDisconnected {
+        // todo: retry strategy (e.g. exponentially increasing delay)
+    }
+}
 ```
 
 Any uncaught Exceptions in the event handler are propagated up the Coroutine scope that
