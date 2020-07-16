@@ -27,6 +27,7 @@ import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -35,6 +36,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
@@ -173,7 +175,14 @@ class KeepAliveGatt internal constructor(
                                 .onEach(_onCharacteristicChanged::send)
                                 .launchIn(this, start = UNDISPATCHED)
                             _gatt = gatt
-                            eventHandler?.invoke(Event.Connected(gatt))
+
+                            try {
+                                eventHandler?.invoke(Event.Connected(gatt))
+                            } catch (exception: Exception) {
+                                scope.cancel(CancellationException("Exception thrown in onConnected event handler", exception))
+                                throw exception
+                            }
+
                             _state.value = State.Connected
                         }
                     } finally {

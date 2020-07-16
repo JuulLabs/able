@@ -106,6 +106,11 @@ for example:
     }
 ```
 
+Any uncaught Exceptions in the event handler are propagated up the Coroutine scope that
+`keepAliveGatt` extension function was called on (`viewModelScope` in the example above), and cause
+the `KeepAliveGatt` to disconnect and **not** reconnect (`connect` can be called to have
+`KeepAliveGatt` attempt to reach a Connected state again).
+
 ### State
 
 Connection state can be monitored via the `state` [`Flow`] property:
