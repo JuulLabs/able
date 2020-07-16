@@ -200,7 +200,10 @@ class KeepAliveGatt internal constructor(
 
             _state.value = State.Disconnected()
         } catch (failure: Exception) {
-            _state.value = State.Disconnected(failure)
+            _state.value = State.Disconnected(
+                // Unwrap the special exception used for signalling to not reconnect.
+                if (failure is OnConnectException) failure.cause else failure
+            )
             throw failure
         } finally {
             eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
