@@ -57,6 +57,8 @@ class ConnectionRejected internal constructor(cause: Throwable) : IOException(ca
 
 typealias EventHandler = suspend (Event) -> Unit
 
+private class OnConnectException(cause: Throwable) : Exception(cause)
+
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
     bluetoothDevice: BluetoothDevice,
@@ -137,6 +139,8 @@ class KeepAliveGatt internal constructor(
                 } catch (rejected: ConnectionRejected) {
                     eventHandler?.invoke(Event.Rejected(cause = rejected))
                     throw rejected
+                } catch (onConnectException: OnConnectException) {
+                    cancel(CancellationException("Exception thrown in onConnected event handler", onConnectException.cause))
                 }
             }
         }.invokeOnCompletion { isRunning.set(false) }
@@ -179,8 +183,8 @@ class KeepAliveGatt internal constructor(
                             try {
                                 eventHandler?.invoke(Event.Connected(gatt))
                             } catch (exception: Exception) {
-                                scope.cancel(CancellationException("Exception thrown in onConnected event handler", exception))
-                                throw exception
+                                // Special exception to signal that we should not reconnect.
+                                throw OnConnectException(exception)
                             }
 
                             _state.value = State.Connected
