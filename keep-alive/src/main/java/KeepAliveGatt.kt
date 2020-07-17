@@ -13,6 +13,7 @@ import com.juul.able.Able
 import com.juul.able.android.connectGatt
 import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
+import com.juul.able.gatt.Gatt
 import com.juul.able.gatt.GattIo
 import com.juul.able.gatt.GattStatus
 import com.juul.able.gatt.OnCharacteristicChanged
@@ -22,11 +23,6 @@ import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.gatt.WriteType
-import com.juul.able.keepalive.State.Cancelled
-import com.juul.able.keepalive.State.Connected
-import com.juul.able.keepalive.State.Connecting
-import com.juul.able.keepalive.State.Disconnected
-import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
@@ -45,6 +41,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
@@ -53,36 +50,23 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
-typealias ConnectAction = suspend GattIo.() -> Unit
-
 class NotReady internal constructor(message: String) : IllegalStateException(message)
-class ConnectionRejected internal constructor(cause: Throwable) : IOException(cause)
 
-sealed class State {
-    object Connecting : State()
-    object Connected : State()
-    object Disconnecting : State()
-    data class Disconnected(val cause: Throwable? = null) : State() {
-        override fun toString() = super.toString()
-    }
-    data class Cancelled(val cause: Throwable?) : State() {
-        override fun toString() = super.toString()
-    }
+typealias EventHandler = suspend (Event) -> Unit
 
-    override fun toString(): String = javaClass.simpleName
-}
+private class ReconnectException(cause: Throwable) : Exception(cause)
 
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
     bluetoothDevice: BluetoothDevice,
     disconnectTimeoutMillis: Long,
-    onConnectAction: ConnectAction? = null
+    eventHandler: EventHandler? = null
 ) = KeepAliveGatt(
     parentCoroutineContext = coroutineContext,
     androidContext = androidContext,
     bluetoothDevice = bluetoothDevice,
     disconnectTimeoutMillis = disconnectTimeoutMillis,
-    onConnectAction = onConnectAction
+    eventHandler = eventHandler
 )
 
 class KeepAliveGatt internal constructor(
@@ -90,33 +74,33 @@ class KeepAliveGatt internal constructor(
     androidContext: Context,
     private val bluetoothDevice: BluetoothDevice,
     private val disconnectTimeoutMillis: Long,
-    private val onConnectAction: ConnectAction? = null
+    private val eventHandler: EventHandler?
 ) : GattIo {
 
     private val applicationContext = androidContext.applicationContext
 
     private val job = SupervisorJob(parentCoroutineContext[Job]).apply {
         invokeOnCompletion { cause ->
-            _state.value = Cancelled(cause)
+            _state.value = State.Cancelled(cause)
             _onCharacteristicChanged.cancel()
         }
     }
     private val scope = CoroutineScope(parentCoroutineContext + job)
 
-    private val isRunning = AtomicBoolean()
+    internal val isRunning = AtomicBoolean()
 
     @Volatile
     private var _gatt: GattIo? = null
     private val gatt: GattIo
         inline get() = _gatt ?: throw NotReady(toString())
 
-    private val _state = MutableStateFlow<State>(Disconnected())
+    private val _state = MutableStateFlow<State>(State.Disconnected())
 
     /**
      * Provides a [Flow] of the [KeepAliveGatt]'s [State].
      *
-     * The initial [state] is [Disconnected] and will typically transition through the following
-     * [State]s after [connect] is called:
+     * The initial [state] is [Disconnected][State.Disconnected] and will typically transition
+     * through the following [State]s after [connect] is called:
      *
      * ```
      *                    connect()
@@ -137,13 +121,29 @@ class KeepAliveGatt internal constructor(
 
     private val _onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
 
+    private var connectionAttempt = 0
+
     fun connect(): Boolean {
         check(!job.isCancelled) { "Cannot connect, $this is closed" }
         isRunning.compareAndSet(false, true) || return false
 
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
             while (isActive) {
-                spawnConnection()
+                connectionAttempt++
+                val result = supervisorScope {
+                    try {
+                        establishConnection()
+                        null
+                    } catch (reconnectException: ReconnectException) {
+                        // Throw unwrapped Exception (from ReconnectException) within
+                        // `supervisorScope` so that Coroutine remains active (reconnects) **and**
+                        // unwrapped Exception propagates to parent scope.
+                        throw reconnectException.cause!!
+                    } catch (exception: Exception) {
+                        exception // Thrown outside of `supervisorScope` to cancel Coroutine.
+                    }
+                }
+                if (result != null) throw result
             }
         }.invokeOnCompletion { isRunning.set(false) }
         return true
@@ -153,48 +153,66 @@ class KeepAliveGatt internal constructor(
         job.children.forEach { it.cancelAndJoin() }
     }
 
-    private suspend fun spawnConnection() {
+    /**
+     * Establishes a connection, suspending until either the attempt at establishing connection
+     * fails or an established connection drops.
+     */
+    private suspend fun establishConnection() {
+        var didConnect = false
+        _state.value = State.Connecting
+
+        val gatt: Gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
+            is Success -> result.gatt
+            is Failure.Rejected -> {
+                _state.value = State.Disconnected(result.cause)
+                eventHandler?.invoke(Event.Rejected(result.cause))
+                throw result.cause
+            }
+            is Failure.Connection -> {
+                Able.error { "Failed to connect to device $bluetoothDevice due to ${result.cause}" }
+                _state.value = State.Disconnected(result.cause)
+                eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
+                return
+            }
+        }
+
         try {
-            _state.value = Connecting
+            try {
+                coroutineScope {
+                    gatt.onCharacteristicChanged
+                        .onEach(_onCharacteristicChanged::send)
+                        .catch { cause ->
+                            // Wrap Exceptions in special ReconnectException to signal a reconnect.
+                            throw ReconnectException(cause)
+                        }
+                        .launchIn(this, start = UNDISPATCHED)
 
-            val gatt = when (val result = bluetoothDevice.connectGatt(applicationContext)) {
-                is Success -> result.gatt
-                is Failure.Rejected -> throw ConnectionRejected(result.cause)
-                is Failure.Connection -> {
-                    Able.error { "Failed to connect to device $bluetoothDevice due to ${result.cause}" }
-                    return
+                    _gatt = gatt
+                    eventHandler?.invoke(Event.Connected(gatt))
+
+                    didConnect = true
+                    _state.value = State.Connected
+                }
+            } finally {
+                _gatt = null
+                _state.value = State.Disconnecting
+
+                withContext(NonCancellable) {
+                    withTimeoutOrNull(disconnectTimeoutMillis) {
+                        gatt.disconnect()
+                    } ?: Able.warn { "Timeout waiting ${disconnectTimeoutMillis}ms for disconnect" }
                 }
             }
 
-            supervisorScope {
-                launch {
-                    try {
-                        coroutineScope {
-                            gatt.onCharacteristicChanged
-                                .onEach(_onCharacteristicChanged::send)
-                                .launchIn(this, start = UNDISPATCHED)
-                            _gatt = gatt
-                            onConnectAction?.invoke(gatt)
-                            _state.value = Connected
-                        }
-                    } finally {
-                        _gatt = null
-                        _state.value = State.Disconnecting
-
-                        withContext(NonCancellable) {
-                            withTimeoutOrNull(disconnectTimeoutMillis) {
-                                gatt.disconnect()
-                            } ?: Able.warn {
-                                "Timed out waiting ${disconnectTimeoutMillis}ms for disconnect"
-                            }
-                        }
-                    }
-                }
-            }
-            _state.value = Disconnected()
+            _state.value = State.Disconnected()
         } catch (failure: Exception) {
-            _state.value = Disconnected(failure)
+            _state.value = State.Disconnected(
+                // Unwrap ReconnectException which is used to signal a reconnect.
+                if (failure is ReconnectException) failure.cause else failure
+            )
             throw failure
+        } finally {
+            eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
         }
     }
 

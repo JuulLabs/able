@@ -21,7 +21,7 @@ fun CoroutineScope.keepAliveGatt(
 | `androidContext`          | The Android `Context` for establishing Bluetooth Low-Energy connections.                                                  |
 | `bluetoothDevice`         | `BluetoothDevice` to maintain a connection with.                                                                          |
 | `disconnectTimeoutMillis` | Duration (in milliseconds) to wait for connection to gracefully spin down (after `disconnect`) before forcefully closing. |
-| `onConnectAction`         | Actions to perform upon connection. `Connected` state is propagated _after_ `onConnectAction` completes.                  |
+| `eventHandler`            | Actions to perform on various events within the KeepAliveGatt's lifecycle (e.g. Connected, Disconnected, Rejected).       |
 
 For example, to create a `KeepAliveGatt` as a child of Android's `viewModelScope`:
 
@@ -34,10 +34,7 @@ class ExampleViewModel(application: Application) : AndroidViewModel(application)
         application,
         bluetoothAdapter.getRemoteDevice(MAC_ADDRESS),
         disconnectTimeoutMillis = 5_000L // 5 seconds
-    ) {
-        // Actions to perform on initial connect *and* subsequent reconnects:
-        discoverServicesOrThrow()
-    }
+    )
 
     fun connect() {
         gatt.connect()
@@ -73,9 +70,50 @@ Once `Connected`, if the connection drops, then `KeepAliveGatt` will automatical
 _To disconnect an established connection or cancel an in-flight connection attempt, `disconnect` can
 be called (it will suspend until underlying [`BluetoothGatt`] has disconnected)._
 
-### Connection State
+## Status
 
-The state can be monitored via the `state` [`Flow`] property:
+The status of a `KeepAliveGatt` can be monitored via either `Event`s or `State`s. The major
+distinction between the two is:
+
+> **`State`**: `State`s are propagated over conflated data streams. If states are changing quickly,
+> then some `State`s may be missed (skipped over). For this reason, they're useful for informing a
+> user of the current state of the connection; as missing a state is acceptable since subsequent
+> states will overwrite the currently reflected state anyways. `State`s should **not** be used if a
+> specific condition (e.g. `Connected`) needs to trigger an action (use `Event` instead).
+
+> **`Event`**: `Event`s allow a developer to integrate actions into the connection process. When an
+> `Event` is triggered, the connection process is paused (suspended) until processing of the `Event`
+> is complete.
+
+`State`s and `Event`s occur in the following order:
+
+![State and event flow](artwork/state-and-event-flow.png)
+
+### Events
+
+`Event`s are configured via the `eventHandler` argument of the `keepAliveGatt` extension function,
+for example:
+
+```kotlin
+val gatt = viewModelScope.keepAliveGatt(...) { event ->
+    event.onConnected {
+        // Actions to perform on initial connect *and* subsequent reconnects:
+        discoverServicesOrThrow()
+    }
+    event.onDisconnected {
+        // todo: retry strategy (e.g. exponentially increasing delay)
+    }
+}
+```
+
+Any uncaught Exceptions in the event handler are propagated up the Coroutine scope that
+`keepAliveGatt` extension function was called on (`viewModelScope` in the example above), and cause
+the `KeepAliveGatt` to disconnect and **not** reconnect (`connect` can be called to have
+`KeepAliveGatt` attempt to reach a Connected state again).
+
+### State
+
+Connection state can be monitored via the `state` [`Flow`] property:
 
 ```kotlin
 val gatt = scope.keepAliveGatt(...)
