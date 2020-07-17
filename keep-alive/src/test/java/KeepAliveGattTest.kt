@@ -422,10 +422,12 @@ class KeepAliveGattTest {
         }
     }
 
+    private class OnConnectedException : Exception()
+
     @Test
     fun `Exception in onConnected makes KeepAliveGatt settle on Disconnected`() = runBlocking {
         val job = Job()
-        val testException = IllegalStateException("Test Exception in onConnected lambda")
+        val onConnectedException = OnConnectedException()
 
         val bluetoothDevice = mockBluetoothDevice()
         val gatt = mockk<Gatt> {
@@ -444,7 +446,7 @@ class KeepAliveGattTest {
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
                 eventHandler = { event ->
-                    event.onConnected { throw testException }
+                    event.onConnected { throw onConnectedException }
                 }
             )
 
@@ -461,10 +463,9 @@ class KeepAliveGattTest {
             // - Disconnecting
             // - Disconnected
             assertTrue(states.size <= 5)
-            assertEquals(
-                expected = Disconnected(testException),
-                actual = states.last()
-            )
+
+            val disconnected = states.last() as Disconnected
+            assertThrowable<OnConnectedException>(disconnected.cause)
         }
 
         job.cancelAndJoin()
@@ -473,7 +474,7 @@ class KeepAliveGattTest {
     @Test
     fun `Exception in onDisconnected makes KeepAliveGatt settle on Disconnected`() = runBlocking {
         val job = Job()
-        val connectionDropException = IllegalStateException("Connection dropped")
+        val connectionDroppedException = IllegalStateException("Connection dropped")
 
         val bluetoothDevice = mockBluetoothDevice()
         val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
@@ -493,7 +494,7 @@ class KeepAliveGattTest {
                 bluetoothDevice = bluetoothDevice,
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
                 eventHandler = { event ->
-                    event.onDisconnected { throw error("Test Exception in onDisconnected lambda") }
+                    event.onDisconnected { error("Test Exception in onDisconnected lambda") }
                 }
             )
 
@@ -502,7 +503,7 @@ class KeepAliveGattTest {
 
             keepAlive.connect()
             keepAlive.state.first { it == Connected }
-            onCharacteristicChanged.close(connectionDropException) // Emulate a connection drop.
+            onCharacteristicChanged.close(connectionDroppedException) // Emulate a connection drop.
 
             delay(5_000L) // Slight wait to make sure we've **settled** on Disconnected state.
 
@@ -515,7 +516,7 @@ class KeepAliveGattTest {
             assertTrue(states.size <= 5)
 
             assertEquals(
-                expected = Disconnected(cause = connectionDropException),
+                expected = Disconnected(cause = connectionDroppedException),
                 actual = states.last()
             )
         }
@@ -527,7 +528,6 @@ class KeepAliveGattTest {
     fun `Exception in onRejected makes KeepAliveGatt settle on Disconnected`() = runBlocking {
         val job = Job()
         val bluetoothDevice = mockBluetoothDevice()
-        val testException = IllegalStateException("Test Exception in onRejected lambda")
 
         val scope = CoroutineScope(job)
         val keepAlive = scope.keepAliveGatt(
@@ -535,7 +535,7 @@ class KeepAliveGattTest {
             bluetoothDevice = bluetoothDevice,
             disconnectTimeoutMillis = DISCONNECT_TIMEOUT,
             eventHandler = { event ->
-                event.onRejected { throw testException }
+                event.onRejected { error("Test Exception in onRejected lambda") }
             }
         )
 
@@ -554,8 +554,8 @@ class KeepAliveGattTest {
         // - Disconnected
         assertTrue(states.size <= 5)
 
-        val lastState = states.last() as Disconnected
-        assertThrowable<RemoteException>(lastState.cause)
+        val disconnected = states.last() as Disconnected
+        assertThrowable<RemoteException>(disconnected.cause)
 
         job.cancelAndJoin()
     }

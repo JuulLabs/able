@@ -26,7 +26,6 @@ import com.juul.able.gatt.WriteType
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -35,13 +34,14 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
@@ -54,7 +54,7 @@ class NotReady internal constructor(message: String) : IllegalStateException(mes
 
 typealias EventHandler = suspend (Event) -> Unit
 
-private class OnConnectException(cause: Throwable) : Exception(cause)
+private class ReconnectException(cause: Throwable) : Exception(cause)
 
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
@@ -130,11 +130,20 @@ class KeepAliveGatt internal constructor(
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
             while (isActive) {
                 connectionAttempt++
-                try {
-                    establishConnection()
-                } catch (onConnectException: OnConnectException) {
-                    cancel(CancellationException("Exception thrown in onConnected event handler", onConnectException.cause))
+                val result = supervisorScope {
+                    try {
+                        establishConnection()
+                        null
+                    } catch (reconnectException: ReconnectException) {
+                        // Throw unwrapped Exception (from ReconnectException) within
+                        // `supervisorScope` so that Coroutine remains active (reconnects) **and**
+                        // unwrapped Exception propagates to parent scope.
+                        throw reconnectException.cause!!
+                    } catch (exception: Exception) {
+                        exception // Thrown outside of `supervisorScope` to cancel Coroutine.
+                    }
                 }
+                if (result != null) throw result
             }
         }.invokeOnCompletion { isRunning.set(false) }
         return true
@@ -169,18 +178,17 @@ class KeepAliveGatt internal constructor(
 
         try {
             try {
-                supervisorScope {
+                coroutineScope {
                     gatt.onCharacteristicChanged
                         .onEach(_onCharacteristicChanged::send)
+                        .catch { cause ->
+                            // Wrap Exceptions in special ReconnectException to signal a reconnect.
+                            throw ReconnectException(cause)
+                        }
                         .launchIn(this, start = UNDISPATCHED)
-                    _gatt = gatt
 
-                    try {
-                        eventHandler?.invoke(Event.Connected(gatt))
-                    } catch (exception: Exception) {
-                        // Special exception to signal that we should not reconnect.
-                        throw OnConnectException(exception)
-                    }
+                    _gatt = gatt
+                    eventHandler?.invoke(Event.Connected(gatt))
 
                     didConnect = true
                     _state.value = State.Connected
@@ -192,17 +200,15 @@ class KeepAliveGatt internal constructor(
                 withContext(NonCancellable) {
                     withTimeoutOrNull(disconnectTimeoutMillis) {
                         gatt.disconnect()
-                    } ?: Able.warn {
-                        "Timed out waiting ${disconnectTimeoutMillis}ms for disconnect"
-                    }
+                    } ?: Able.warn { "Timeout waiting ${disconnectTimeoutMillis}ms for disconnect" }
                 }
             }
 
             _state.value = State.Disconnected()
         } catch (failure: Exception) {
             _state.value = State.Disconnected(
-                // Unwrap the special exception used for signalling to not reconnect.
-                if (failure is OnConnectException) failure.cause else failure
+                // Unwrap ReconnectException which is used to signal a reconnect.
+                if (failure is ReconnectException) failure.cause else failure
             )
             throw failure
         } finally {
