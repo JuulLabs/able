@@ -77,7 +77,7 @@ public abstract interface class com/juul/able/device/Device {
 	public abstract fun connectGatt (Landroid/content/Context;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class com/juul/able/gatt/ConnectionLost : java/io/IOException {
+public final class com/juul/able/gatt/ConnectionLostException : java/io/IOException {
 	public fun <init> ()V
 }
 
@@ -109,7 +109,7 @@ public abstract interface class com/juul/able/gatt/GattConnection {
 	public abstract fun getOnConnectionStateChange ()Lkotlinx/coroutines/flow/Flow;
 }
 
-public final class com/juul/able/gatt/GattErrorStatus : java/io/IOException {
+public final class com/juul/able/gatt/GattErrorStatusException : java/io/IOException {
 	public final fun getEvent ()Lcom/juul/able/gatt/OnConnectionStateChange;
 }
 
@@ -242,7 +242,7 @@ public final class com/juul/able/gatt/OnReadRemoteRssi : com/juul/able/gatt/HasG
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/juul/able/gatt/OutOfOrderGattCallback : java/io/IOException {
+public final class com/juul/able/gatt/OutOfOrderGattCallbackException : java/io/IOException {
 }
 
 public final class com/juul/able/logger/AndroidLogger : com/juul/able/logger/Logger {

@@ -24,7 +24,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-class OutOfOrderGattCallback internal constructor(message: String) : IOException(message)
+class OutOfOrderGattCallbackException internal constructor(message: String) : IOException(message)
 
 class CoroutinesGatt internal constructor(
     private val bluetoothGatt: BluetoothGatt,
@@ -118,7 +118,7 @@ class CoroutinesGatt internal constructor(
         } catch (e: CancellationException) {
             throw CancellationException("Waiting on response for $methodName was cancelled", e)
         } catch (e: Exception) {
-            throw ConnectionLost("Failed to receive response for $methodName", e)
+            throw ConnectionLostException("Failed to receive response for $methodName", e)
         }
         Able.info { "$methodName ← $response" }
 
@@ -126,7 +126,7 @@ class CoroutinesGatt internal constructor(
         // `BluetoothGattCallback` method gets called out of order then we'll cast to the wrong
         // response type.
         response as? T
-            ?: throw OutOfOrderGattCallback(
+            ?: throw OutOfOrderGattCallbackException(
                 "Unexpected response type ${response.javaClass.simpleName} received for $methodName"
             )
     }
@@ -139,7 +139,7 @@ class CoroutinesGatt internal constructor(
                     val device = bluetoothGatt.device
                     "← Device $device received $event while waiting for disconnection"
                 }
-                if (event.status != GATT_SUCCESS) throw GattErrorStatus(event)
+                if (event.status != GATT_SUCCESS) throw GattErrorStatusException(event)
             }
             .first { (_, newState) -> newState == STATE_DISCONNECTED }
             .also { (_, newState) ->

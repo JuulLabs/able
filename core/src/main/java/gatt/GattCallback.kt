@@ -38,7 +38,7 @@ internal class GattCallback(
 
     private fun onDisconnecting() {
         onCharacteristicChanged.close()
-        onResponse.close(ConnectionLost())
+        onResponse.close(ConnectionLostException())
     }
 
     fun close(gatt: BluetoothGatt) {

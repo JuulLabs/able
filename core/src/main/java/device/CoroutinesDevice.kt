@@ -13,11 +13,11 @@ import android.os.RemoteException
 import com.juul.able.Able
 import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
-import com.juul.able.gatt.ConnectionLost
+import com.juul.able.gatt.ConnectionLostException
 import com.juul.able.gatt.CoroutinesGatt
 import com.juul.able.gatt.GattCallback
 import com.juul.able.gatt.GattConnection
-import com.juul.able.gatt.GattErrorStatus
+import com.juul.able.gatt.GattErrorStatusException
 import com.juul.able.gatt.asGattConnectionStateString
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -60,8 +60,8 @@ internal class CoroutinesDevice(
         onConnectionStateChange
             .onEach { event ->
                 Able.verbose { "← Device $device received $event while waiting for connection" }
-                if (event.status != GATT_SUCCESS) throw GattErrorStatus(event)
-                if (event.newState == STATE_DISCONNECTED) throw ConnectionLost()
+                if (event.status != GATT_SUCCESS) throw GattErrorStatusException(event)
+                if (event.newState == STATE_DISCONNECTED) throw ConnectionLostException()
             }
             .first { (_, newState) -> newState == STATE_CONNECTED }
             .also { (_, newState) ->

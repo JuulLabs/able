@@ -50,7 +50,7 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
-class NotReady internal constructor(message: String) : IllegalStateException(message)
+class NotReadyException internal constructor(message: String) : IllegalStateException(message)
 
 typealias EventHandler = suspend (Event) -> Unit
 
@@ -92,7 +92,7 @@ class KeepAliveGatt internal constructor(
     @Volatile
     private var _gatt: GattIo? = null
     private val gatt: GattIo
-        inline get() = _gatt ?: throw NotReady(toString())
+        inline get() = _gatt ?: throw NotReadyException(toString())
 
     private val _state = MutableStateFlow<State>(State.Disconnected())
 

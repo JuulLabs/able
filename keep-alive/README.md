@@ -124,12 +124,12 @@ gatt.state.collect { println("State: $it") }
 
 If a Gatt operation (e.g. `discoverServices`, `writeCharacteristic`, `readCharacteristic`, etc) is
 unable to be performed due to a GATT connection being unavailable (i.e. current `State` is **not**
-`Connected`), then it will immediately throw `NotReady`.
+`Connected`), then it will immediately throw `NotReadyException`.
 
 It is the responsibility of the caller to handle retrying, for example:
 
 ```kotlin
-class GattCancelled : Exception()
+class GattCancelledException : Exception()
 
 suspend fun KeepAliveGatt.readCharacteristicWithRetry(
     characteristic: BluetoothGattCharacteristic,
@@ -148,7 +148,7 @@ suspend fun KeepAliveGatt.readCharacteristicWithRetry(
 
 private suspend fun KeepAliveGatt.suspendUntilConnected() {
     state
-        .onEach { if (it is Cancelled) throw GattCancelled() }
+        .onEach { if (it is Cancelled) throw GattCancelledException() }
         .first { it == Connected }
 }
 ```

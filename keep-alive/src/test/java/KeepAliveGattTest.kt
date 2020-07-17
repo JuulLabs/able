@@ -15,12 +15,12 @@ import com.juul.able.Able
 import com.juul.able.android.connectGatt
 import com.juul.able.device.ConnectGattResult
 import com.juul.able.device.ConnectGattResult.Failure
-import com.juul.able.gatt.ConnectionLost
+import com.juul.able.gatt.ConnectionLostException
 import com.juul.able.gatt.Gatt
 import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.keepalive.Event
-import com.juul.able.keepalive.NotReady
+import com.juul.able.keepalive.NotReadyException
 import com.juul.able.keepalive.State
 import com.juul.able.keepalive.State.Connected
 import com.juul.able.keepalive.State.Connecting
@@ -192,14 +192,14 @@ class KeepAliveGattTest {
     }
 
     @Test
-    fun `Bluetooth IO when not connected throws NotReady`() = runBlocking<Unit> {
+    fun `Bluetooth IO when not connected throws NotReadyException`() = runBlocking<Unit> {
         val keepAlive = GlobalScope.keepAliveGatt(
             androidContext = mockk(relaxed = true),
             bluetoothDevice = mockk(),
             disconnectTimeoutMillis = DISCONNECT_TIMEOUT
         )
 
-        assertFailsWith<NotReady> {
+        assertFailsWith<NotReadyException> {
             keepAlive.discoverServices()
         }
     }
@@ -220,7 +220,7 @@ class KeepAliveGattTest {
                 bluetoothDevice.connectGatt(any())
             } answers {
                 if (++attempt >= connectionAttempts) throw EndOfTest()
-                Failure.Connection(mockk<ConnectionLost>())
+                Failure.Connection(mockk<ConnectionLostException>())
             }
 
             val keepAlive = scope.keepAliveGatt(
@@ -616,7 +616,7 @@ class KeepAliveGattTest {
                 bluetoothDevice.connectGatt(any())
             } answers {
                 if (++attempt > connectionAttempts) throw EndOfTest()
-                Failure.Connection(mockk<ConnectionLost>())
+                Failure.Connection(mockk<ConnectionLostException>())
             }
 
             val events = mutableListOf<Event>()

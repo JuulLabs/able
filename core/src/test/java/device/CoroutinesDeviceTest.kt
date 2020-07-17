@@ -16,10 +16,10 @@ import com.juul.able.device.ConnectGattResult
 import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
 import com.juul.able.device.CoroutinesDevice
-import com.juul.able.gatt.ConnectionLost
+import com.juul.able.gatt.ConnectionLostException
 import com.juul.able.gatt.GATT_CONN_CANCEL
 import com.juul.able.gatt.GattCallback
-import com.juul.able.gatt.GattErrorStatus
+import com.juul.able.gatt.GattErrorStatusException
 import com.juul.able.gatt.OnConnectionStateChange
 import com.juul.able.test.logger.ConsoleLoggerTestRule
 import io.mockk.every
@@ -65,7 +65,7 @@ class CoroutinesDeviceTest {
 
         assertEquals(
             expected = OnConnectionStateChange(GATT_CONN_CANCEL, STATE_CONNECTED),
-            actual = (failure.cause as GattErrorStatus).event
+            actual = (failure.cause as GattErrorStatusException).event
         )
         verify(exactly = 1) { bluetoothGatt.close() }
     }
@@ -120,7 +120,7 @@ class CoroutinesDeviceTest {
         val failure = device.connectGatt(mockk()) as Failure.Connection
 
         assertEquals<Class<out Throwable>>(
-            expected = ConnectionLost::class.java,
+            expected = ConnectionLostException::class.java,
             actual = failure.cause.javaClass
         )
         verify(exactly = 1) { bluetoothGatt.close() }
