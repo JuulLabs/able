@@ -45,11 +45,11 @@ interface GattConnection {
     suspend fun disconnect(): Unit
 }
 
-class GattErrorStatus internal constructor(
+class GattErrorStatusException internal constructor(
     val event: OnConnectionStateChange
 ) : IOException("Received $event")
 
-class ConnectionLost internal constructor(
+class ConnectionLostException internal constructor(
     message: String? = null,
     cause: Throwable? = null
 ) : IOException(message, cause)

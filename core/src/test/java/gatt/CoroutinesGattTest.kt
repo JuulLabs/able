@@ -14,7 +14,7 @@ import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
 import android.os.RemoteException
-import com.juul.able.gatt.ConnectionLost
+import com.juul.able.gatt.ConnectionLostException
 import com.juul.able.gatt.CoroutinesGatt
 import com.juul.able.gatt.GattCallback
 import com.juul.able.gatt.OnCharacteristicChanged
@@ -22,7 +22,7 @@ import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnCharacteristicWrite
 import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OnReadRemoteRssi
-import com.juul.able.gatt.OutOfOrderGattCallback
+import com.juul.able.gatt.OutOfOrderGattCallbackException
 import com.juul.able.gatt.writeCharacteristic
 import com.juul.able.test.gatt.FakeBluetoothGattCharacteristic as FakeCharacteristic
 import com.juul.able.test.gatt.FakeBluetoothGattDescriptor as FakeDescriptor
@@ -357,7 +357,7 @@ class CoroutinesGattTest {
 
             val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
             runBlocking {
-                assertFailsWith<OutOfOrderGattCallback> {
+                assertFailsWith<OutOfOrderGattCallbackException> {
                     gatt.readCharacteristic(createCharacteristic())
                 }
             }
@@ -475,7 +475,7 @@ class CoroutinesGattTest {
     }
 
     @Test
-    fun `Gatt action throws ConnectionLost if connection drops while executing request`() {
+    fun `Gatt action throws ConnectionLostException if connection drops while executing request`() {
         createDispatcher().use { dispatcher ->
             val callback = GattCallback(dispatcher)
             val bluetoothGatt = mockk<BluetoothGatt> {
@@ -489,12 +489,12 @@ class CoroutinesGattTest {
 
             val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
             runBlocking {
-                val cause = assertFailsWith<ConnectionLost> {
+                val cause = assertFailsWith<ConnectionLostException> {
                     gatt.readCharacteristic(createCharacteristic())
                 }.cause
 
                 assertEquals<Class<out Throwable>>(
-                    expected = ConnectionLost::class.java,
+                    expected = ConnectionLostException::class.java,
                     actual = cause!!.javaClass
                 )
             }

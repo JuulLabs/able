@@ -43,7 +43,7 @@ interface GattIo {
 
     /**
      * @throws [RemoteException] if underlying [BluetoothGatt.discoverServices] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     * @throws [ConnectionLostException] if [Gatt] disconnects while method is executing.
      */
     suspend fun discoverServices(): GattStatus
 
@@ -55,13 +55,13 @@ interface GattIo {
 
     /**
      * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     * @throws [ConnectionLostException] if [Gatt] disconnects while method is executing.
      */
     suspend fun requestMtu(mtu: Int): OnMtuChanged
 
     /**
      * @throws [RemoteException] if underlying [BluetoothGatt.readCharacteristic] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     * @throws [ConnectionLostException] if [Gatt] disconnects while method is executing.
      */
     suspend fun readCharacteristic(
         characteristic: BluetoothGattCharacteristic
@@ -71,7 +71,7 @@ interface GattIo {
      * @param value applied to [characteristic] when characteristic is written.
      * @param writeType applied to [characteristic] when characteristic is written.
      * @throws [RemoteException] if underlying [BluetoothGatt.writeCharacteristic] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     * @throws [ConnectionLostException] if [Gatt] disconnects while method is executing.
      */
     suspend fun writeCharacteristic(
         characteristic: BluetoothGattCharacteristic,
@@ -82,7 +82,7 @@ interface GattIo {
     /**
      * @param value applied to [descriptor] when descriptor is written.
      * @throws [RemoteException] if underlying [BluetoothGatt.writeDescriptor] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     * @throws [ConnectionLostException] if [Gatt] disconnects while method is executing.
      */
     suspend fun writeDescriptor(
         descriptor: BluetoothGattDescriptor,
@@ -96,7 +96,7 @@ interface GattIo {
 
     /**
      * @throws [RemoteException] if underlying [BluetoothGatt.requestMtu] returns `false`.
-     * @throws [ConnectionLost] if [Gatt] disconnects while method is executing.
+     * @throws [ConnectionLostException] if [Gatt] disconnects while method is executing.
      */
     suspend fun readRemoteRssi(): OnReadRemoteRssi
 }
