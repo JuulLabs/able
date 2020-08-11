@@ -8,6 +8,8 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
+import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
+import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
 import android.content.Context
 import com.juul.able.Able
 import com.juul.able.android.connectGatt
@@ -35,46 +37,40 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.BroadcastChannel
-import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 class NotReadyException internal constructor(message: String) : IllegalStateException(message)
 
-typealias EventHandler = suspend (Event) -> Unit
-
-private class ReconnectException(cause: Throwable) : Exception(cause)
-
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
     bluetoothDevice: BluetoothDevice,
-    disconnectTimeoutMillis: Long,
-    eventHandler: EventHandler? = null
+    disconnectTimeoutMillis: Long
 ) = KeepAliveGatt(
     parentCoroutineContext = coroutineContext,
     androidContext = androidContext,
     bluetoothDevice = bluetoothDevice,
-    disconnectTimeoutMillis = disconnectTimeoutMillis,
-    eventHandler = eventHandler
+    disconnectTimeoutMillis = disconnectTimeoutMillis
 )
 
 class KeepAliveGatt internal constructor(
     parentCoroutineContext: CoroutineContext,
     androidContext: Context,
     private val bluetoothDevice: BluetoothDevice,
-    private val disconnectTimeoutMillis: Long,
-    private val eventHandler: EventHandler?
+    private val disconnectTimeoutMillis: Long
 ) : GattIo {
 
     private val applicationContext = androidContext.applicationContext
@@ -82,7 +78,6 @@ class KeepAliveGatt internal constructor(
     private val job = SupervisorJob(parentCoroutineContext[Job]).apply {
         invokeOnCompletion { cause ->
             _state.value = State.Cancelled(cause)
-            _onCharacteristicChanged.cancel()
         }
     }
     private val scope = CoroutineScope(parentCoroutineContext + job)
@@ -119,7 +114,16 @@ class KeepAliveGatt internal constructor(
     @FlowPreview
     val state: Flow<State> = _state
 
-    private val _onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
+    private val _events = MutableSharedFlow<Event>(replay = 0)
+
+    @FlowPreview
+    val events: Flow<Event> = _events.asSharedFlow()
+
+    private val _onCharacteristicChanged = MutableSharedFlow<OnCharacteristicChanged>(replay = 0)
+
+    @FlowPreview
+    override val onCharacteristicChanged: Flow<OnCharacteristicChanged> =
+        _onCharacteristicChanged.asSharedFlow()
 
     private var connectionAttempt = 0
 
@@ -130,20 +134,7 @@ class KeepAliveGatt internal constructor(
         scope.launch(CoroutineName("KeepAliveGatt@$bluetoothDevice")) {
             while (isActive) {
                 connectionAttempt++
-                val result = supervisorScope {
-                    try {
-                        establishConnection()
-                        null
-                    } catch (reconnectException: ReconnectException) {
-                        // Throw unwrapped Exception (from ReconnectException) within
-                        // `supervisorScope` so that Coroutine remains active (reconnects) **and**
-                        // unwrapped Exception propagates to parent scope.
-                        throw reconnectException.cause!!
-                    } catch (exception: Exception) {
-                        exception // Thrown outside of `supervisorScope` to cancel Coroutine.
-                    }
-                }
-                if (result != null) throw result
+                establishConnection()
             }
         }.invokeOnCompletion { isRunning.set(false) }
         return true
@@ -165,60 +156,52 @@ class KeepAliveGatt internal constructor(
             is Success -> result.gatt
             is Failure.Rejected -> {
                 _state.value = State.Disconnected(result.cause)
-                eventHandler?.invoke(Event.Rejected(result.cause))
+                _events.emit(Event.Rejected(result.cause))
                 throw result.cause
             }
             is Failure.Connection -> {
                 Able.error { "Failed to connect to device $bluetoothDevice due to ${result.cause}" }
                 _state.value = State.Disconnected(result.cause)
-                eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
+                _events.emit(Event.Disconnected(didConnect, connectionAttempt))
                 return
             }
         }
 
         try {
-            try {
-                coroutineScope {
-                    gatt.onCharacteristicChanged
-                        .onEach(_onCharacteristicChanged::send)
-                        .catch { cause ->
-                            // Wrap Exceptions in special ReconnectException to signal a reconnect.
-                            throw ReconnectException(cause)
-                        }
-                        .launchIn(this, start = UNDISPATCHED)
+            coroutineScope {
+                // Materialize upstream disconnection (as a `null` emission).
+                val cancellation: Flow<OnCharacteristicChanged?> =
+                    gatt.onConnectionStateChange.transform {
+                        if (it.newState == STATE_DISCONNECTING ||
+                            it.newState == STATE_DISCONNECTED
+                        ) emit(null)
+                    }
 
-                    _gatt = gatt
-                    eventHandler?.invoke(Event.Connected(gatt))
+                merge(gatt.onCharacteristicChanged, cancellation)
+                    .takeWhile { it != null }.filterNotNull() // Stop collection on disconnect.
+                    .onEach(_onCharacteristicChanged::emit)
+                    .launchIn(this, start = UNDISPATCHED)
 
-                    didConnect = true
-                    _state.value = State.Connected
-                }
-            } finally {
+                _gatt = gatt
+                _events.emit(Event.Connected(gatt))
+
+                didConnect = true
+                _state.value = State.Connected
+            }
+        } finally {
+            withContext(NonCancellable) {
                 _gatt = null
                 _state.value = State.Disconnecting
 
-                withContext(NonCancellable) {
-                    withTimeoutOrNull(disconnectTimeoutMillis) {
-                        gatt.disconnect()
-                    } ?: Able.warn { "Timeout waiting ${disconnectTimeoutMillis}ms for disconnect" }
-                }
+                withTimeoutOrNull(disconnectTimeoutMillis) {
+                    gatt.disconnect()
+                } ?: Able.warn { "Timeout waiting ${disconnectTimeoutMillis}ms for disconnect" }
+                _state.value = State.Disconnected(null)
             }
 
-            _state.value = State.Disconnected()
-        } catch (failure: Exception) {
-            _state.value = State.Disconnected(
-                // Unwrap ReconnectException which is used to signal a reconnect.
-                if (failure is ReconnectException) failure.cause else failure
-            )
-            throw failure
-        } finally {
-            eventHandler?.invoke(Event.Disconnected(didConnect, connectionAttempt))
+            _events.emit(Event.Disconnected(didConnect, connectionAttempt))
         }
     }
-
-    @FlowPreview
-    override val onCharacteristicChanged: Flow<OnCharacteristicChanged> =
-        _onCharacteristicChanged.asFlow()
 
     override suspend fun discoverServices(): GattStatus = gatt.discoverServices()
 

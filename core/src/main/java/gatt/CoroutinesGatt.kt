@@ -17,7 +17,7 @@ import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.sync.Mutex
@@ -33,10 +33,12 @@ class CoroutinesGatt internal constructor(
 ) : Gatt {
 
     @FlowPreview
-    override val onConnectionStateChange = callback.onConnectionStateChange
+    override val onConnectionStateChange: Flow<OnConnectionStateChange> =
+        callback.onConnectionStateChange
 
     @FlowPreview
-    override val onCharacteristicChanged = callback.onCharacteristicChanged.asFlow()
+    override val onCharacteristicChanged: Flow<OnCharacteristicChanged> =
+        callback.onCharacteristicChanged
 
     override val services: List<BluetoothGattService> get() = bluetoothGatt.services
     override fun getService(uuid: UUID): BluetoothGattService? = bluetoothGatt.getService(uuid)
@@ -139,7 +141,9 @@ class CoroutinesGatt internal constructor(
                     val device = bluetoothGatt.device
                     "← Device $device received $event while waiting for disconnection"
                 }
-                if (event.status != GATT_SUCCESS) throw GattErrorStatusException(event)
+                val (status, newState) = event
+                if (status != GATT_SUCCESS && newState != STATE_DISCONNECTED)
+                    throw GattErrorStatusException(event)
             }
             .first { (_, newState) -> newState == STATE_DISCONNECTED }
             .also { (_, newState) ->

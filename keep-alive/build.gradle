@@ -28,6 +28,7 @@ android {
 
 dependencies {
     api project(':core')
+    testImplementation deps.kotlin.coroutines.debug
     testImplementation deps.kotlin.junit
     testImplementation deps.mockk
 }
