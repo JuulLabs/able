@@ -75,7 +75,7 @@ public final class com/juul/able/keepalive/KeepAliveGattKt {
 	public static final fun keepAliveGatt (Lkotlinx/coroutines/CoroutineScope;Landroid/content/Context;Landroid/bluetooth/BluetoothDevice;J)Lcom/juul/able/keepalive/KeepAliveGatt;
 }
 
-public final class com/juul/able/keepalive/NotReadyException : java/lang/IllegalStateException {
+public final class com/juul/able/keepalive/NotReadyException : java/io/IOException {
 }
 
 public abstract class com/juul/able/keepalive/State {

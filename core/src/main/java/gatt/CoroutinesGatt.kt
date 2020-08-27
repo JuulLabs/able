@@ -12,7 +12,6 @@ import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
 import android.os.RemoteException
 import com.juul.able.Able
-import java.io.IOException
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
@@ -24,7 +23,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-class OutOfOrderGattCallbackException internal constructor(message: String) : IOException(message)
+class OutOfOrderGattCallbackException internal constructor(
+    message: String
+) : IllegalStateException(message)
 
 class CoroutinesGatt internal constructor(
     private val bluetoothGatt: BluetoothGatt,
@@ -143,7 +144,7 @@ class CoroutinesGatt internal constructor(
                 }
                 val (status, newState) = event
                 if (status != GATT_SUCCESS && newState != STATE_DISCONNECTED)
-                    throw GattErrorStatusException(event)
+                    throw GattStatusException(event.toString())
             }
             .first { (_, newState) -> newState == STATE_DISCONNECTED }
             .also { (_, newState) ->

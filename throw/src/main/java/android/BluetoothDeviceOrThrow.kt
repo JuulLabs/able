@@ -14,11 +14,11 @@ import com.juul.able.device.ConnectGattResult.Failure
 import com.juul.able.device.ConnectGattResult.Success
 import com.juul.able.gatt.ConnectionLostException
 import com.juul.able.gatt.Gatt
-import com.juul.able.gatt.GattErrorStatusException
+import com.juul.able.gatt.GattStatusException
 
 /**
  * @throws RemoteException if underlying [BluetoothDevice.connectGatt] returns `null`.
- * @throws GattErrorStatusException if non-[GATT_SUCCESS] status is received during connection process.
+ * @throws GattStatusException if non-[GATT_SUCCESS] status is received during connection process.
  * @throws ConnectionLostException if [STATE_DISCONNECTED] is received during connection process.
  */
 suspend fun BluetoothDevice.connectGattOrThrow(

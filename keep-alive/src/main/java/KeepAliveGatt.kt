@@ -25,6 +25,7 @@ import com.juul.able.gatt.OnDescriptorWrite
 import com.juul.able.gatt.OnMtuChanged
 import com.juul.able.gatt.OnReadRemoteRssi
 import com.juul.able.gatt.WriteType
+import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
@@ -53,7 +54,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
-class NotReadyException internal constructor(message: String) : IllegalStateException(message)
+class NotReadyException internal constructor(
+    message: String
+) : IOException(message)
 
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,

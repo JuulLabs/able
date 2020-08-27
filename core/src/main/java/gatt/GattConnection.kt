@@ -45,9 +45,12 @@ interface GattConnection {
     suspend fun disconnect(): Unit
 }
 
-class GattErrorStatusException internal constructor(
-    val event: OnConnectionStateChange
-) : IOException("Received $event")
+class GattStatusException(message: String?) : IOException(message) {
+    constructor(
+        status: GattStatus,
+        prefix: String
+    ) : this("$prefix failed with status ${status.asGattStatusString()}")
+}
 
 class ConnectionLostException internal constructor(
     message: String? = null,
