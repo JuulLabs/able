@@ -1,0 +1,35 @@
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+// https://help.github.com/en/github/managing-packages-with-github-packages/configuring-gradle-for-use-with-github-packages#example-using-gradle-groovy-for-multiple-packages-in-the-same-repository
+publishing {
+    repositories {
+        maven {
+            name = "github"
+
+            // Because upper case letters aren't supported, you must use lowercase letters for
+            // the repository owner even if the GitHub user or organization name contains
+            // uppercase letters.
+            //
+            // https://help.github.com/en/github/managing-packages-with-github-packages/configuring-gradle-for-use-with-github-packages#authenticating-with-a-personal-access-token
+            url = publishUrl()
+
+            credentials {
+                username = project.findProperty("github.packages.username")
+                password = project.findProperty("github.packages.password")
+            }
+        }
+    }
+
+    publications {
+        mavenAar(MavenPublication) {
+            from components.android
+            artifact sourcesJar
+
+            group = "com.juul.able"
+            version = project.property("version")
+        }
+    }
+}

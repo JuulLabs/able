@@ -2,12 +2,10 @@ plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'org.jmailen.kotlinter'
-    id 'com.vanniktech.maven.publish'
+    id 'digital.wup.android-maven-publish'
 }
 
-mavenPublish {
-    useLegacyMode = true
-}
+apply from: rootProject.file('gradle/publish.gradle')
 
 android {
     compileSdkVersion versions.compileSdk
