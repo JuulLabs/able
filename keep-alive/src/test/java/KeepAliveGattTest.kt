@@ -493,8 +493,6 @@ class KeepAliveGattTest {
             coEvery { disconnect() } returns Unit
         }
 
-        val connectedEvents = AtomicInteger()
-
         mockkStatic(BLUETOOTH_DEVICE_CLASS) {
             coEvery {
                 bluetoothDevice.connectGatt(any())
@@ -508,22 +506,11 @@ class KeepAliveGattTest {
                 disconnectTimeoutMillis = DISCONNECT_TIMEOUT
             )
 
-            keepAlive.events
-                .filterIsInstance<Event.Connected>()
-                .onEach { connectedEvents.incrementAndGet() }
-                .launchIn(scope)
-
-            assertEquals(
-                expected = 0,
-                actual = connectedEvents.get()
-            )
-
-            keepAlive.connect()
-            keepAlive.state.first { it == Connected }
-            assertEquals(
-                expected = 1,
-                actual = connectedEvents.get()
-            )
+            val connected = async(start = UNDISPATCHED) {
+                keepAlive.events.first { it is Event.Connected }
+            }
+            assertTrue(keepAlive.connect())
+            connected.await()
 
             job.cancelAndJoin()
         }
