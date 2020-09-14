@@ -2,12 +2,19 @@ ext.versions = [
     compileSdk: 26,
     targetSdk: 26,
     minSdk: 21,
+
+    // STOPSHIP: Update version once `SharedFlow` is officially released.
+    // https://github.com/Kotlin/kotlinx.coroutines/pull/2069
+    coroutines: '1.3.9-sharedflow-5a53535',
 ]
 
 ext.deps = [
     kotlin: [
         stdlib: "org.jetbrains.kotlin:kotlin-stdlib",
-        coroutines: "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.7",
+        coroutines: [
+            core: "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.coroutines}",
+            debug: "org.jetbrains.kotlinx:kotlinx-coroutines-debug:${versions.coroutines}",
+        ],
         junit: "org.jetbrains.kotlin:kotlin-test-junit",
     ],
 

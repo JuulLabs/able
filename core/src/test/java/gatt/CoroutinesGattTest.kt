@@ -17,7 +17,6 @@ import android.os.RemoteException
 import com.juul.able.gatt.ConnectionLostException
 import com.juul.able.gatt.CoroutinesGatt
 import com.juul.able.gatt.GattCallback
-import com.juul.able.gatt.OnCharacteristicChanged
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnCharacteristicWrite
 import com.juul.able.gatt.OnDescriptorWrite
@@ -41,6 +40,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
+import kotlinx.coroutines.debug.junit4.CoroutinesTimeout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -52,6 +52,9 @@ import org.junit.Rule
 private val testUuid = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
 
 class CoroutinesGattTest {
+
+    @get:Rule
+    val timeoutRule = CoroutinesTimeout.seconds(10)
 
     @get:Rule
     val loggerRule = ConsoleLoggerTestRule()
@@ -409,68 +412,6 @@ class CoroutinesGattTest {
             }
 
             verify(exactly = 1) { bluetoothGatt.close() }
-        }
-    }
-
-    @Test
-    fun `On disconnect, onCharacteristicChanged subscriptions complete normally`() {
-        createDispatcher().use { dispatcher ->
-            val callback = GattCallback(dispatcher)
-            val bluetoothGatt = mockk<BluetoothGatt> {
-                every { close() } returns Unit
-                every { device } returns createBluetoothDevice()
-            }
-            val characteristic = FakeCharacteristic(
-                testUuid,
-                value = byteArrayOf(0xF, 0x0, 0x0, 0xD)
-            )
-            val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
-
-            val events = runBlocking {
-                launch {
-                    callback.onCharacteristicChanged(bluetoothGatt, characteristic)
-                    delay(500L)
-                    callback.onConnectionStateChange(
-                        bluetoothGatt,
-                        GATT_SUCCESS,
-                        STATE_DISCONNECTED
-                    )
-                }
-
-                gatt.onCharacteristicChanged.toList()
-            }
-
-            assertEquals(
-                expected = listOf(
-                    OnCharacteristicChanged(characteristic, byteArrayOf(0xF, 0x0, 0x0, 0xD))
-                ),
-                actual = events
-            )
-
-            verify(exactly = 1) { bluetoothGatt.close() }
-        }
-    }
-
-    @Test
-    fun `When already disconnected, onCharacteristicChanged subscription completes normally`() {
-        createDispatcher().use { dispatcher ->
-            val callback = GattCallback(dispatcher)
-            val bluetoothGatt = mockk<BluetoothGatt> {
-                every { close() } returns Unit
-                every { device } returns createBluetoothDevice()
-            }
-            val gatt = CoroutinesGatt(bluetoothGatt, dispatcher, callback)
-
-            val events = runBlocking {
-                callback.onConnectionStateChange(bluetoothGatt, GATT_SUCCESS, STATE_DISCONNECTED)
-                verify(exactly = 1) { bluetoothGatt.close() }
-                gatt.onCharacteristicChanged.toList()
-            }
-
-            assertEquals(
-                expected = emptyList(),
-                actual = events
-            )
         }
     }
 

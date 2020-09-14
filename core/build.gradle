@@ -29,7 +29,8 @@ android {
 }
 
 dependencies {
-    api deps.kotlin.coroutines
+    api deps.kotlin.coroutines.core
+    testImplementation deps.kotlin.coroutines.debug
     testImplementation deps.kotlin.junit
     testImplementation deps.mockk
     testImplementation deps.equalsverifier

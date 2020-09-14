@@ -1,4 +1,4 @@
-[![codecov](https://codecov.io/gh/JuulLabs-OSS/able/branch/master/graph/badge.svg)](https://codecov.io/gh/JuulLabs-OSS/able)
+[![codecov](https://codecov.io/gh/JuulLabs/able/branch/master/graph/badge.svg)](https://codecov.io/gh/JuulLabs/able)
 
 # Able
 
@@ -197,7 +197,7 @@ dependencies {
 # License
 
 ```
-Copyright 2020 JUUL Labs
+Copyright 2020 JUUL Labs, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
