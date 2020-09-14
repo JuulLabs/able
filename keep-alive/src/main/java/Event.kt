@@ -4,12 +4,12 @@
 
 package com.juul.able.keepalive
 
-import com.juul.able.gatt.GattIo
+import com.juul.able.gatt.Gatt
 
 sealed class Event {
 
     /** Triggered upon a connection being successfully established. */
-    data class Connected(val gatt: GattIo) : Event()
+    data class Connected(val gatt: Gatt) : Event()
 
     /**
      * Triggered either immediately after an established connection has dropped or after a failed
@@ -34,7 +34,7 @@ sealed class Event {
     data class Rejected(val cause: Throwable) : Event()
 }
 
-suspend fun Event.onConnected(action: suspend GattIo.() -> Unit) {
+suspend fun Event.onConnected(action: suspend Gatt.() -> Unit) {
     if (this is Event.Connected) action.invoke(gatt)
 }
 

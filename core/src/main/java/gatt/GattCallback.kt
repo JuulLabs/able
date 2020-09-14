@@ -14,12 +14,12 @@ import android.bluetooth.BluetoothProfile.STATE_DISCONNECTING
 import com.juul.able.Able
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
-import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
 import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.runBlocking
 
@@ -31,24 +31,34 @@ internal class GattCallback(
     val onConnectionStateChange: Flow<OnConnectionStateChange> =
         _onConnectionStateChange.filterNotNull()
 
-    val onCharacteristicChanged = BroadcastChannel<OnCharacteristicChanged>(BUFFERED)
+    private val _onCharacteristicChanged = MutableSharedFlow<OnCharacteristicChanged>(
+        replay = 0,
+        extraBufferCapacity = 64
+    )
+    val onCharacteristicChanged: Flow<OnCharacteristicChanged> =
+        _onCharacteristicChanged.asSharedFlow()
+
     val onResponse = Channel<Any>(CONFLATED)
 
     private val isClosed = AtomicBoolean()
 
     private fun onDisconnecting() {
-        onCharacteristicChanged.close()
         onResponse.close(ConnectionLostException())
     }
 
-    fun close(gatt: BluetoothGatt) {
+    fun close(
+        gatt: BluetoothGatt,
+        emitDisconnected: Boolean = true
+    ) {
         if (isClosed.compareAndSet(false, true)) {
             Able.verbose { "Closing GattCallback belonging to device ${gatt.device}" }
             onDisconnecting() // Duplicate call in case Android skips STATE_DISCONNECTING.
             gatt.close()
 
-            _onConnectionStateChange.value =
-                OnConnectionStateChange(GATT_SUCCESS, STATE_DISCONNECTED)
+            if (emitDisconnected) {
+                _onConnectionStateChange.value =
+                    OnConnectionStateChange(GATT_SUCCESS, STATE_DISCONNECTED)
+            }
 
             // todo: Remove when https://github.com/Kotlin/kotlinx.coroutines/issues/261 is fixed.
             dispatcher.close()
@@ -66,7 +76,7 @@ internal class GattCallback(
 
         when (newState) {
             STATE_DISCONNECTING -> onDisconnecting()
-            STATE_DISCONNECTED -> close(gatt)
+            STATE_DISCONNECTED -> close(gatt, emitDisconnected = false)
         }
     }
 
@@ -78,9 +88,9 @@ internal class GattCallback(
         val event = OnCharacteristicChanged(characteristic, value)
         Able.verbose { "← $event" }
 
-        if (!onCharacteristicChanged.offer(event)) {
+        if (!_onCharacteristicChanged.tryEmit(event)) {
             Able.warn { "Subscribers are slow to consume, blocking thread for $event" }
-            runBlocking { onCharacteristicChanged.send(event) }
+            runBlocking { _onCharacteristicChanged.emit(event) }
         }
     }
 

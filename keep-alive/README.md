@@ -11,8 +11,7 @@ A keep-alive GATT is created by calling the `keepAliveGatt` extension function o
 fun CoroutineScope.keepAliveGatt(
     androidContext: Context,
     bluetoothDevice: BluetoothDevice,
-    disconnectTimeoutMillis: Long,
-    onConnectAction: ConnectAction? = null
+    disconnectTimeoutMillis: Long
 ): KeepAliveGatt
 ```
 
@@ -21,7 +20,6 @@ fun CoroutineScope.keepAliveGatt(
 | `androidContext`          | The Android `Context` for establishing Bluetooth Low-Energy connections.                                                  |
 | `bluetoothDevice`         | `BluetoothDevice` to maintain a connection with.                                                                          |
 | `disconnectTimeoutMillis` | Duration (in milliseconds) to wait for connection to gracefully spin down (after `disconnect`) before forcefully closing. |
-| `eventHandler`            | Actions to perform on various events within the KeepAliveGatt's lifecycle (e.g. Connected, Disconnected, Rejected).       |
 
 For example, to create a `KeepAliveGatt` as a child of Android's `viewModelScope`:
 
@@ -95,21 +93,57 @@ distinction between the two is:
 for example:
 
 ```kotlin
-val gatt = viewModelScope.keepAliveGatt(...) { event ->
-    event.onConnected {
-        // Actions to perform on initial connect *and* subsequent reconnects:
-        discoverServicesOrThrow()
-    }
-    event.onDisconnected {
-        // todo: retry strategy (e.g. exponentially increasing delay)
+val keepAliveGatt = GlobalScope.keepAliveGatt(...)
+
+viewModelScope.launch {
+    keepAliveGatt.events.collect { event ->
+        event.onConnected {
+            // Actions to perform on initial connect *and* subsequent reconnects:
+            discoverServicesOrThrow()
+        }
+        event.onDisconnected {
+            // todo: retry strategy (e.g. exponentially increasing delay)
+        }
     }
 }
 ```
 
-Any uncaught Exceptions in the event handler are propagated up the Coroutine scope that
-`keepAliveGatt` extension function was called on (`viewModelScope` in the example above), and cause
-the `KeepAliveGatt` to disconnect and **not** reconnect (`connect` can be called to have
-`KeepAliveGatt` attempt to reach a Connected state again).
+Any uncaught Exceptions in an event handler are propagated up to the collecting Coroutine scope
+(`viewModelScope` in the example above) and `KeepAliveGatt` will continue normally (assuming it's
+parent Coroutine is still active). You can choose to handle/react to failures, such as reconnecting
+or disconnecting.
+
+For example, if while setting up the connection in `onConnected` you want to retry connection
+(i.e. disconnect then reconnect) on failure, simply call `disconnect()` and `KeepAliveGatt` will (as
+usual) attempt to reconnect the lost connection:
+
+```kotlin
+keepAliveGatt.events.collect { event ->
+    event.onConnected { // `this` is the underlying `Gatt`.
+        try {
+            // todo: On connect actions.
+        } catch (e: Exception) {
+            disconnect() // Instructs underlying Gatt to disconnect.
+            // KeepAliveGatt will react by attempting another connection.
+        }
+    }
+}
+```
+
+Alternatively, if you want to cancel the connection process (and settle on a `Disconnect` state) you
+can instruct the `KeepAliveGatt` to `disconnect()`:
+
+```kotlin
+keepAliveGatt.events.collect { event ->
+    event.onConnected {
+        try {
+            // todo: On connect actions.
+        } catch (e: Exception) {
+            keepAliveGatt.disconnect() // Instructs `KeepAliveGatt` to settle on a `Disconnected` state.
+        }
+    }
+}
+```
 
 ### State
 

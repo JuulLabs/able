@@ -13,12 +13,12 @@ public abstract class com/juul/able/keepalive/Event {
 }
 
 public final class com/juul/able/keepalive/Event$Connected : com/juul/able/keepalive/Event {
-	public fun <init> (Lcom/juul/able/gatt/GattIo;)V
-	public final fun component1 ()Lcom/juul/able/gatt/GattIo;
-	public final fun copy (Lcom/juul/able/gatt/GattIo;)Lcom/juul/able/keepalive/Event$Connected;
-	public static synthetic fun copy$default (Lcom/juul/able/keepalive/Event$Connected;Lcom/juul/able/gatt/GattIo;ILjava/lang/Object;)Lcom/juul/able/keepalive/Event$Connected;
+	public fun <init> (Lcom/juul/able/gatt/Gatt;)V
+	public final fun component1 ()Lcom/juul/able/gatt/Gatt;
+	public final fun copy (Lcom/juul/able/gatt/Gatt;)Lcom/juul/able/keepalive/Event$Connected;
+	public static synthetic fun copy$default (Lcom/juul/able/keepalive/Event$Connected;Lcom/juul/able/gatt/Gatt;ILjava/lang/Object;)Lcom/juul/able/keepalive/Event$Connected;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getGatt ()Lcom/juul/able/gatt/GattIo;
+	public final fun getGatt ()Lcom/juul/able/gatt/Gatt;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -57,6 +57,7 @@ public final class com/juul/able/keepalive/KeepAliveGatt : com/juul/able/gatt/Ga
 	public final fun connect ()Z
 	public final fun disconnect (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun discoverServices (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getEvents ()Lkotlinx/coroutines/flow/Flow;
 	public fun getOnCharacteristicChanged ()Lkotlinx/coroutines/flow/Flow;
 	public fun getService (Ljava/util/UUID;)Landroid/bluetooth/BluetoothGattService;
 	public fun getServices ()Ljava/util/List;
@@ -71,8 +72,7 @@ public final class com/juul/able/keepalive/KeepAliveGatt : com/juul/able/gatt/Ga
 }
 
 public final class com/juul/able/keepalive/KeepAliveGattKt {
-	public static final fun keepAliveGatt (Lkotlinx/coroutines/CoroutineScope;Landroid/content/Context;Landroid/bluetooth/BluetoothDevice;JLkotlin/jvm/functions/Function2;)Lcom/juul/able/keepalive/KeepAliveGatt;
-	public static synthetic fun keepAliveGatt$default (Lkotlinx/coroutines/CoroutineScope;Landroid/content/Context;Landroid/bluetooth/BluetoothDevice;JLkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lcom/juul/able/keepalive/KeepAliveGatt;
+	public static final fun keepAliveGatt (Lkotlinx/coroutines/CoroutineScope;Landroid/content/Context;Landroid/bluetooth/BluetoothDevice;J)Lcom/juul/able/keepalive/KeepAliveGatt;
 }
 
 public final class com/juul/able/keepalive/NotReadyException : java/lang/IllegalStateException {
