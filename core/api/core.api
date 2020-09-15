@@ -109,10 +109,6 @@ public abstract interface class com/juul/able/gatt/GattConnection {
 	public abstract fun getOnConnectionStateChange ()Lkotlinx/coroutines/flow/Flow;
 }
 
-public final class com/juul/able/gatt/GattErrorStatusException : java/io/IOException {
-	public final fun getEvent ()Lcom/juul/able/gatt/OnConnectionStateChange;
-}
-
 public abstract interface class com/juul/able/gatt/GattIo {
 	public abstract fun discoverServices (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getOnCharacteristicChanged ()Lkotlinx/coroutines/flow/Flow;
@@ -128,6 +124,11 @@ public abstract interface class com/juul/able/gatt/GattIo {
 
 public final class com/juul/able/gatt/GattIoKt {
 	public static final fun writeCharacteristic (Lcom/juul/able/gatt/GattIo;Landroid/bluetooth/BluetoothGattCharacteristic;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/juul/able/gatt/GattStatusException : java/io/IOException {
+	public fun <init> (ILjava/lang/String;)V
+	public fun <init> (Ljava/lang/String;)V
 }
 
 public abstract interface class com/juul/able/gatt/HasGattStatus {
@@ -242,7 +243,7 @@ public final class com/juul/able/gatt/OnReadRemoteRssi : com/juul/able/gatt/HasG
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/juul/able/gatt/OutOfOrderGattCallbackException : java/io/IOException {
+public final class com/juul/able/gatt/OutOfOrderGattCallbackException : java/lang/IllegalStateException {
 }
 
 public final class com/juul/able/logger/AndroidLogger : com/juul/able/logger/Logger {
