@@ -10,7 +10,9 @@ import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGatt.GATT_WRITE_NOT_PERMITTED
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
+import android.os.RemoteException
 import com.juul.able.gatt.Gatt
+import com.juul.able.gatt.GattStatusException
 import com.juul.able.gatt.OnCharacteristicRead
 import com.juul.able.gatt.OnCharacteristicWrite
 import com.juul.able.gatt.OnDescriptorWrite
@@ -37,12 +39,12 @@ private val testUuid = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
 class GattTest {
 
     @Test
-    fun `discoverServicesOrThrow throws IllegalStateException for non-GATT_SUCCESS response`() {
+    fun `discoverServicesOrThrow throws GattStatusException for non-GATT_SUCCESS response`() {
         val gatt = mockk<Gatt> {
             coEvery { discoverServices() } returns GATT_FAILURE
         }
 
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<GattStatusException> {
             runBlocking {
                 gatt.discoverServicesOrThrow()
             }
@@ -50,12 +52,12 @@ class GattTest {
     }
 
     @Test
-    fun `readRemoteRssiOrThrow throws IllegalStateException for non-GATT_SUCCESS response`() {
+    fun `readRemoteRssiOrThrow throws GattStatusException for non-GATT_SUCCESS response`() {
         val gatt = mockk<Gatt> {
             coEvery { readRemoteRssi() } returns OnReadRemoteRssi(rssi = 0, status = GATT_FAILURE)
         }
 
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<GattStatusException> {
             runBlocking {
                 gatt.readRemoteRssiOrThrow()
             }
@@ -79,7 +81,7 @@ class GattTest {
     }
 
     @Test
-    fun `readCharacteristicOrThrow throws IllegalStateException for non-GATT_SUCCESS response`() {
+    fun `readCharacteristicOrThrow throws GattStatusException for non-GATT_SUCCESS response`() {
         val characteristic = mockk<BluetoothGattCharacteristic> {
             every<UUID> { uuid } returns testUuid
         }
@@ -91,7 +93,7 @@ class GattTest {
             )
         }
 
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<GattStatusException> {
             runBlocking {
                 gatt.readCharacteristicOrThrow(characteristic)
             }
@@ -123,12 +125,12 @@ class GattTest {
     }
 
     @Test
-    fun `setCharacteristicNotificationOrThrow throws IllegalStateException for false return`() {
+    fun `setCharacteristicNotificationOrThrow throws RemoteException for false return`() {
         val gatt = mockk<Gatt> {
             coEvery { setCharacteristicNotification(any(), any()) } returns false
         }
 
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<RemoteException> {
             val characteristic = mockk<BluetoothGattCharacteristic> {
                 every<UUID> { uuid } returns testUuid
             }
@@ -137,7 +139,7 @@ class GattTest {
     }
 
     @Test
-    fun `writeCharacteristicOrThrow throws IllegalStateException for non-GATT_SUCCESS response`() {
+    fun `writeCharacteristicOrThrow throws GattStatusException for non-GATT_SUCCESS response`() {
         val characteristic = mockk<BluetoothGattCharacteristic> {
             every<UUID> { uuid } returns testUuid
         }
@@ -148,7 +150,7 @@ class GattTest {
             )
         }
 
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<GattStatusException> {
             runBlocking {
                 gatt.writeCharacteristicOrThrow(characteristic, byteArrayOf())
             }
@@ -156,7 +158,7 @@ class GattTest {
     }
 
     @Test
-    fun `writeDescriptorOrThrow throws IllegalStateException for non-GATT_SUCCESS response`() {
+    fun `writeDescriptorOrThrow throws GattStatusException for non-GATT_SUCCESS response`() {
         val descriptor = mockk<BluetoothGattDescriptor> {
             every { uuid } returns testUuid
         }
@@ -167,7 +169,7 @@ class GattTest {
             )
         }
 
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<GattStatusException> {
             runBlocking {
                 gatt.writeDescriptorOrThrow(descriptor, byteArrayOf())
             }
@@ -175,7 +177,7 @@ class GattTest {
     }
 
     @Test
-    fun `requestMtuOrThrow throws IllegalStateException for non-GATT_SUCCESS response`() {
+    fun `requestMtuOrThrow throws GattStatusException for non-GATT_SUCCESS response`() {
         val gatt = mockk<Gatt> {
             coEvery { requestMtu(any()) } returns OnMtuChanged(
                 mtu = 23,
@@ -183,7 +185,7 @@ class GattTest {
             )
         }
 
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<GattStatusException> {
             runBlocking {
                 gatt.requestMtuOrThrow(1024)
             }
