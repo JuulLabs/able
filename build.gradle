@@ -25,7 +25,7 @@ ext.publishUrl = {
     if (version == null || version == "" || version == "unspecified") {
         return ""
     } else if (version ==~ /.+-dev-?\d+/) {
-        return "https://maven.pkg.github.com/juullabs/android-github-packages-dev"
+        return "https://maven.pkg.github.com/juullabs/android-github-packages"
     } else {
         throw GradleScriptException("Only publication of dev tags are allowed on internal branch.")
     }
