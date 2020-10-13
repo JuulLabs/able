@@ -37,7 +37,7 @@ import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 
 class GattClosed(message: String, cause: Throwable) : IllegalStateException(message, cause)
-class GattConnectionLost : Exception()
+class GattConnectionLost(cause: Throwable? = null) : Exception(cause)
 
 class CoroutinesGatt(
     private val bluetoothGatt: BluetoothGatt,
@@ -255,12 +255,17 @@ class CoroutinesGatt(
     private suspend fun <T> ReceiveChannel<T>.receiveRequiringConnection(): T = select {
         onReceive { it }
 
-        onConnectionStateChange
+        val subscription = onConnectionStateChange
             .openSubscription() // fixme: Find solution w/o subscription object creation cost.
             .filter { (_, newState) ->
                 newState == STATE_DISCONNECTING || newState == STATE_DISCONNECTED
             }
-            .onReceive { throw GattConnectionLost() }
+
+        try {
+            subscription.onReceive { throw GattConnectionLost() }
+        } catch (e: ClosedReceiveChannelException) {
+            throw GattConnectionLost(e)
+        }
     }
 }
 
