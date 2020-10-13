@@ -15,6 +15,7 @@ import com.juul.able.experimental.asGattConnectionStatusString
 import com.juul.able.experimental.asGattStateString
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
 
 data class GattCallbackConfig(
@@ -93,7 +94,7 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
             "onConnectionStateChange → status = $statusString, newState = $stateString"
         }
 
-        if (!onConnectionStateChange.offer(OnConnectionStateChange(status, newState))) {
+        if (!onConnectionStateChange.offerCatching(OnConnectionStateChange(status, newState))) {
             Able.warn { "onConnectionStateChange → dropped" }
         }
     }
@@ -185,4 +186,8 @@ internal class GattCallback(config: GattCallbackConfig) : BluetoothGattCallback(
         }
         notifyGattReady()
     }
+}
+
+fun <E> SendChannel<E>.offerCatching(element: E): Boolean {
+    return runCatching { offer(element) }.getOrDefault(false)
 }
