@@ -3,10 +3,8 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'org.jmailen.kotlinter'
     id 'com.hiya.jacoco-android'
-    id 'digital.wup.android-maven-publish'
+    id 'com.vanniktech.maven.publish'
 }
-
-apply from: rootProject.file('gradle/publish.gradle')
 
 jacoco {
     toolVersion = "0.8.5"
@@ -16,6 +14,10 @@ jacocoAndroidUnitTestReport {
     csv.enabled false
     html.enabled true
     xml.enabled true
+}
+
+mavenPublish {
+    useLegacyMode = true
 }
 
 android {

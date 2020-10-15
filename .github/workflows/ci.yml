@@ -23,8 +23,6 @@ jobs:
         --max-workers 2
         -PdisablePreDex
         -Pkotlin.incremental=false
-        -Pgithub.packages.username=${{ secrets.MOBILE_GITHUB_PACKAGES_USERNAME }}
-        -Pgithub.packages.password=${{ secrets.MOBILE_GITHUB_PACKAGES_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -52,8 +50,29 @@ jobs:
         with:
           fail_ci_if_error: true
 
+      - name: Snapshot
+        if: startsWith(github.ref, 'refs/heads/') && endsWith(github.ref, '-SNAPSHOT')
+        run: >-
+          ./gradlew
+          $GRADLE_ARGS
+          --no-parallel
+          uploadArchives
+          -PVERSION_NAME="${GITHUB_REF/refs\/heads\//}"
+
+      - name: Keyring
+        if: startsWith(github.ref, 'refs/tags/')
+        run: mkdir -p ~/.gnupg && echo "${{ secrets.SIGNING_SECRET_KEY_RING }}" | base64 --decode > ~/.gnupg/secring.gpg
+
       - name: Publish
         # https://github.community/t5/GitHub-Actions/Run-step-only-for-new-tags/m-p/32448/highlight/true#M1138
         if: startsWith(github.ref, 'refs/tags/')
         # https://github.community/t5/GitHub-Actions/How-to-get-just-the-tag-name/m-p/32167/highlight/true#M1027
-        run: ./gradlew $GRADLE_ARGS publish -Pversion=${GITHUB_REF/refs\/tags\//}
+        run: >-
+          ./gradlew
+          $GRADLE_ARGS
+          --no-parallel
+          uploadArchives
+          -PVERSION_NAME=${GITHUB_REF/refs\/tags\//}
+          -Psigning.keyId="${{ secrets.SIGNING_KEY_ID }}"
+          -Psigning.password="${{ secrets.SIGNING_PASSWORD }}"
+          -Psigning.secretKeyRingFile="$HOME/.gnupg/secring.gpg"
