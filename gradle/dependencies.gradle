@@ -2,10 +2,7 @@ ext.versions = [
     compileSdk: 26,
     targetSdk: 26,
     minSdk: 21,
-
-    // STOPSHIP: Update version once `SharedFlow` is officially released.
-    // https://github.com/Kotlin/kotlinx.coroutines/pull/2069
-    coroutines: '1.3.9-sharedflow-5a53535',
+    coroutines: '1.4.0-M1',
 ]
 
 ext.deps = [

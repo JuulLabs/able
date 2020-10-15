@@ -24,18 +24,6 @@ subprojects {
     repositories {
         google()
         jcenter()
-
-        // STOPSHIP: Remove once `SharedFlow` is officially released.
-        // https://github.com/Kotlin/kotlinx.coroutines/pull/2069
-        maven {
-            url = "https://maven.pkg.github.com/juullabs/kotinx.coroutines-sharedflow"
-            credentials {
-                username = findProperty('github.packages.username')
-                password = findProperty('github.packages.password')
-            }
-        }
-
-        mavenLocal()
     }
 }
 
