@@ -79,9 +79,9 @@ distinction between the two is:
 > states will overwrite the currently reflected state anyways. `State`s should **not** be used if a
 > specific condition (e.g. `Connected`) needs to trigger an action (use `Event` instead).
 
-> **`Event`**: `Event`s allow a developer to integrate actions into the connection process. When an
-> `Event` is triggered, the connection process is paused (suspended) until processing of the `Event`
-> is complete.
+> **`Event`**: `Event`s allow a developer to integrate actions into the connection process. If
+> consumers are slow to `collect` events, then the connection handling process pauses (suspends)
+> until consumers are ready to `collect` more events.
 
 `State`s and `Event`s occur in the following order:
 
@@ -89,8 +89,7 @@ distinction between the two is:
 
 ### Events
 
-`Event`s are configured via the `eventHandler` argument of the `keepAliveGatt` extension function,
-for example:
+`Event`s can be `collect`ed via the `events` `Flow`, for example:
 
 ```kotlin
 val keepAliveGatt = GlobalScope.keepAliveGatt(...)
@@ -108,14 +107,9 @@ viewModelScope.launch {
 }
 ```
 
-Any uncaught Exceptions in an event handler are propagated up to the collecting Coroutine scope
-(`viewModelScope` in the example above) and `KeepAliveGatt` will continue normally (assuming it's
-parent Coroutine is still active). You can choose to handle/react to failures, such as reconnecting
-or disconnecting.
-
-For example, if while setting up the connection in `onConnected` you want to retry connection
-(i.e. disconnect then reconnect) on failure, simply call `disconnect()` and `KeepAliveGatt` will (as
-usual) attempt to reconnect the lost connection:
+For example, if is desired to retry connection if a failure occurs while setting up a connection,
+simply call `disconnect()` and `KeepAliveGatt` will (as usual) attempt to reconnect the lost
+connection:
 
 ```kotlin
 keepAliveGatt.events.collect { event ->
