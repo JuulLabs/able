@@ -90,6 +90,7 @@ public final class com/juul/able/gatt/CoroutinesGatt : com/juul/able/gatt/Gatt {
 	public fun getServices ()Ljava/util/List;
 	public fun readCharacteristic (Landroid/bluetooth/BluetoothGattCharacteristic;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun readRemoteRssi (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun requestConnectionPriority (Lcom/juul/able/gatt/Priority;)Z
 	public fun requestMtu (ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun setCharacteristicNotification (Landroid/bluetooth/BluetoothGattCharacteristic;Z)Z
 	public fun toString ()Ljava/lang/String;
@@ -107,6 +108,7 @@ public abstract interface class com/juul/able/gatt/Gatt : com/juul/able/gatt/Gat
 public abstract interface class com/juul/able/gatt/GattConnection {
 	public abstract fun disconnect (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getOnConnectionStateChange ()Lkotlinx/coroutines/flow/Flow;
+	public abstract fun requestConnectionPriority (Lcom/juul/able/gatt/Priority;)Z
 }
 
 public abstract interface class com/juul/able/gatt/GattIo {
@@ -244,6 +246,14 @@ public final class com/juul/able/gatt/OnReadRemoteRssi : com/juul/able/gatt/HasG
 }
 
 public final class com/juul/able/gatt/OutOfOrderGattCallbackException : java/lang/IllegalStateException {
+}
+
+public final class com/juul/able/gatt/Priority : java/lang/Enum {
+	public static final field Balanced Lcom/juul/able/gatt/Priority;
+	public static final field High Lcom/juul/able/gatt/Priority;
+	public static final field Low Lcom/juul/able/gatt/Priority;
+	public static fun valueOf (Ljava/lang/String;)Lcom/juul/able/gatt/Priority;
+	public static fun values ()[Lcom/juul/able/gatt/Priority;
 }
 
 public final class com/juul/able/logger/AndroidLogger : com/juul/able/logger/Logger {
