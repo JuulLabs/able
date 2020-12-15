@@ -37,10 +37,14 @@ typealias GattConnectionStatus = Int
  */
 typealias GattConnectionState = Int
 
+enum class Priority { Low, Balanced, High }
+
 interface GattConnection {
 
     @FlowPreview
     val onConnectionStateChange: Flow<OnConnectionStateChange>
+
+    fun requestConnectionPriority(priority: Priority): Boolean
 
     suspend fun disconnect(): Unit
 }

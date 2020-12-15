@@ -44,6 +44,10 @@ class CoroutinesGatt internal constructor(
     override val services: List<BluetoothGattService> get() = bluetoothGatt.services
     override fun getService(uuid: UUID): BluetoothGattService? = bluetoothGatt.getService(uuid)
 
+    override fun requestConnectionPriority(
+        priority: Priority
+    ): Boolean = bluetoothGatt.requestConnectionPriority(priority.intValue)
+
     override suspend fun disconnect() {
         try {
             Able.info { "Disconnecting $this" }
@@ -157,3 +161,10 @@ class CoroutinesGatt internal constructor(
 
     override fun toString(): String = "CoroutinesGatt(device=${bluetoothGatt.device})"
 }
+
+private val Priority.intValue: Int
+    get() = when (this) {
+        Priority.Low -> BluetoothGatt.CONNECTION_PRIORITY_LOW_POWER
+        Priority.Balanced -> BluetoothGatt.CONNECTION_PRIORITY_BALANCED
+        Priority.High -> BluetoothGatt.CONNECTION_PRIORITY_HIGH
+    }
