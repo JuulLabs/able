@@ -1,6 +1,10 @@
-[![codecov](https://codecov.io/gh/JuulLabs/able/branch/main/graph/badge.svg)](https://codecov.io/gh/JuulLabs/able)
+# DEPRECATED
+
+Project has been deprecated, and superseded by [Kable]. If any needed features are available in Able but absent from [Kable], please [create an issue](https://github.com/JuulLabs/kable/issues) requesting the desired feature. Thank you.
 
 # Able
+
+[![codecov](https://codecov.io/gh/JuulLabs/able/branch/main/graph/badge.svg)](https://codecov.io/gh/JuulLabs/able)
 
 Provides a Kotlin [Coroutines] powered interaction with **A**ndroid's **B**luetooth **L**ow
 **E**nergy (BLE) framework.
@@ -213,6 +217,7 @@ limitations under the License.
 ```
 
 
+[Kable]: https://github.com/JuulLabs/kable
 [Coroutines]: https://kotlinlang.org/docs/reference/coroutines.html
 [Recipes]: documentation/recipes.md
 [`BluetoothGattCallback`]: https://developer.android.com/reference/android/bluetooth/BluetoothGattCallback.html
