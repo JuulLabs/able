@@ -2,6 +2,8 @@
 
 Project has been deprecated, and superseded by [Kable]. If any needed features are available in Able but absent from [Kable], please [create an issue](https://github.com/JuulLabs/kable/issues) requesting the desired feature. Thank you.
 
+The [migration guide](migration.md) may be helpful for those transitioning from Able to [Kable].
+
 # Able
 
 [![codecov](https://codecov.io/gh/JuulLabs/able/branch/main/graph/badge.svg)](https://codecov.io/gh/JuulLabs/able)
